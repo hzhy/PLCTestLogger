@@ -23,6 +23,9 @@ public sealed class RegisterDefinition
     /// <summary>enum 类型可选：当本寄存器取某选项时，引用它的结果列使用的倍率。</summary>
     public Dictionary<string, double>? ResultScales { get; set; }
 
+    /// <summary>enum 类型可选：当本寄存器取某选项时，引用它的结果列保留的小数位数。</summary>
+    public Dictionary<string, int>? ResultDecimals { get; set; }
+
     /// <summary>number 类型：原始值 × Scale。</summary>
     public double Scale { get; set; } = 1;
 
