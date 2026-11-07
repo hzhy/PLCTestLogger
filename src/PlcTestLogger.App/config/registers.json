@@ -1,10 +1,11 @@
 {
-  "_comment": "寄存器含义配置。type: enum=常量选项(options: 数值->语义), number=数值(×scale, 保留decimals位, 附unit; unitFrom 指定单位/倍率由另一寄存器的选项决定), raw=原始整数。triggerRegister 为“测试完成可保存”的标志寄存器，由0变1时触发保存。",
+  "_comment": "寄存器含义配置。type: enum=常量选项(options: 数值->语义), number=数值(×scale, 保留decimals位, 附unit; unitFrom 指定单位/倍率由另一寄存器的选项决定), raw=原始整数。dataType: uint16(默认)/int16/uint32/int32/float32，32位类型占本地址和下一地址两个寄存器(如 D212+D213)，后一个地址不要再定义。wordOrder: 32位字序，lowHigh=低字在前(汇川默认)/highLow=高字在前，可在单个寄存器上覆盖。enabled=false 表示备用/未使用，不在界面显示、不能作为 Excel 列，读取不受影响。triggerRegister 为“测试完成可保存”的标志寄存器，由0变1时触发保存。",
   "dRegisterBase": 0,
   "startRegister": 200,
   "count": 31,
   "triggerRegister": 230,
   "resetTriggerAfterSave": false,
+  "wordOrder": "lowHigh",
   "registers": [
     {
       "address": 200,
@@ -50,7 +51,8 @@
     {
       "address": 201,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 202,
@@ -146,17 +148,20 @@
     {
       "address": 205,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 206,
       "name": "测试方法类型2(备用)",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 207,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 208,
@@ -293,32 +298,38 @@
     {
       "address": 224,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 225,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 226,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 227,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 228,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 229,
       "name": "备用",
-      "type": "raw"
+      "type": "raw",
+      "enabled": false
     },
     {
       "address": 230,

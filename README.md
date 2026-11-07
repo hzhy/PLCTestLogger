@@ -50,6 +50,7 @@ dotnet publish src/PlcTestLogger.App -c Release -r win-x64 --self-contained true
 
 - `id`：设备编号，也是 `logger/` 下子文件夹名。
 - `pollIntervalMs`：轮询周期（毫秒）。
+- `enabled`：是否启用（默认 true）。关闭后不轮询、不保存；界面设备列表第一列的开关对应此字段，切换后自动写回。
 
 ### config/registers.json
 
@@ -59,6 +60,7 @@ dotnet publish src/PlcTestLogger.App -c Release -r win-x64 --self-contained true
 | `startRegister` / `count` | 一次连续读取的起始 D 编号与个数（默认 D200 起 31 个）。 |
 | `triggerRegister` | “测试完成、可以保存”的标志寄存器编号（默认 230）。由 0 变 1 时触发一次保存；保持为 1 不重复保存；程序启动时若已为 1 不触发。 |
 | `resetTriggerAfterSave` | 为 `true` 时保存成功后把触发寄存器写回 0（默认 `false`，不向 PLC 写入）。 |
+| `wordOrder` | 32 位数据的字序：`lowHigh` 低字在前（汇川默认），`highLow` 高字在前。 |
 | `registers[]` | 每个寄存器的定义，见下。 |
 | `excelColumns` | 输出到 Excel 的寄存器编号及列顺序（“保存时间”固定为第一列）。 |
 
@@ -73,9 +75,28 @@ dotnet publish src/PlcTestLogger.App -c Release -r win-x64 --self-contained true
 | `scale` / `decimals` / `unit` | number | 显示值 = 原始值 × scale，保留 decimals 位小数，附单位 |
 | `unitFrom` | number | 单位 / 倍率 / 小数位由另一寄存器（enum）的当前选项决定，例如接口测试结果随“测试方法”切换 PsiG 或 ml/min |
 | `resultUnits` / `resultScales` / `resultDecimals` | enum | 配合 `unitFrom`：本寄存器取某选项时，引用它的结果列使用的单位 / 倍率 / 小数位 |
-| `signed` | 全部 | 按 16 位有符号整数解释 |
+| `dataType` | 全部 | `uint16`（默认）、`int16`、`uint32`、`int32`、`float32`。32 位类型占本地址和下一地址两个寄存器（如 D212+D213），下一地址不要再定义 |
+| `wordOrder` | 32 位 | 覆盖全局字序 |
+| `enabled` | 全部 | `false` = 备用/未使用：不在实时界面显示，不能作为 Excel 列。读取不受影响（程序总是整块连续读取） |
+| `signed` | 16 位 | 等价于 `dataType: "int16"`，兼容旧配置 |
 
 > 示例配置中的倍率（温度 ×0.1、压力 ×0.01、流量 ×0.1）是根据样例 Excel 推测的，请按 PLC 实际存储方式校正。
+
+### 16 位 / 32 位数据
+
+Modbus 保持寄存器每个都是 16 位。PLC 侧如果用 32 位整数（DINT）或浮点数（REAL）存放，会占用两个连续的 D 寄存器，
+此时把该寄存器的 `dataType` 设为 `int32` / `uint32` / `float32`，程序会自动把两个字拼成一个值，例如：
+
+```json
+{ "address": 212, "name": "接口1测试结果", "type": "number", "dataType": "float32", "decimals": 2, "unitFrom": 204 }
+```
+
+上例占用 D212 和 D213，接口 2 的结果应从 D214 开始。字序不确定时先用默认 `lowHigh`，如果读出的值明显异常再改为 `highLow`。
+
+### 关于触发信号
+
+保存只在触发寄存器“由 0 变为非 0”的那一刻执行一次。信号保持为 1 期间（例如 30 秒）不会重复保存，
+必须回到 0 后再变 1 才会触发下一次。程序启动或断线重连时若信号已经是 1，也不会触发。
 
 ## 界面
 

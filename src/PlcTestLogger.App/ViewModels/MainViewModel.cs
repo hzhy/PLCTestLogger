@@ -15,16 +15,15 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(DeviceManager manager)
     {
         _manager = manager;
-        foreach (var d in manager.Devices) Devices.Add(new DeviceItemViewModel(d));
-        var cfg = manager.Registers;
-        for (var a = cfg.StartRegister; a < cfg.StartRegister + cfg.Count; a++)
-            Registers.Add(new RegisterRowViewModel(a, cfg.Find(a)?.Name ?? ""));
+        foreach (var d in manager.Devices) Devices.Add(CreateItem(d));
+        foreach (var def in manager.Registers.Registers.Where(r => r.Enabled).OrderBy(r => r.Address))
+            Registers.Add(new RegisterRowViewModel(def.Address, def.Name));
 
         manager.StateChanged += (id, s) => OnUi(() => { var d = Find(id); if (d is not null) d.State = s; });
         manager.SnapshotUpdated += (id, snap) =>
         {
             lock (_latest) _latest[id] = snap;
-            if (id == SelectedDevice?.Id) OnUi(() => RefreshRegisters(snap));
+            if (id == SelectedDevice?.Id) OnUi(() => { if (id == SelectedDevice?.Id) RefreshRegisters(snap); });
         };
         manager.RecordSaved += r => OnUi(() =>
         {
@@ -59,10 +58,26 @@ public partial class MainViewModel : ObservableObject
         RefreshRegisters(snap);
     }
 
+    private DeviceItemViewModel CreateItem(DeviceDefinition def)
+    {
+        var vm = new DeviceItemViewModel(def);
+        vm.EnabledChanged += async (item, enabled) =>
+        {
+            try
+            {
+                await _manager.SetEnabledAsync(item.Id, enabled);
+                if (!enabled) { item.State = Core.Polling.ConnectionState.Disconnected; item.LastError = ""; lock (_latest) _latest.Remove(item.Id); if (item == SelectedDevice) RefreshRegisters(null); }
+                AddLog($"{item.Id} {(enabled ? "已启用轮询" : "已停用轮询")}");
+            }
+            catch (Exception ex) { AddLog($"[{item.Id}] 切换失败: {ex.Message}"); }
+        };
+        return vm;
+    }
+
     public void AddDevice(DeviceDefinition def)
     {
         _manager.AddDevice(def);
-        var vm = new DeviceItemViewModel(def);
+        var vm = CreateItem(def);
         Devices.Add(vm);
         SelectedDevice = vm;
         AddLog($"新增设备 {def.Id} ({def.Ip}:{def.Port})");
@@ -99,7 +114,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (snap is null)
         {
-            foreach (var r in Registers) { r.Raw = 0; r.Text = ""; }
+            foreach (var r in Registers) { r.Raw = ""; r.Text = ""; }
             return;
         }
         var cells = _manager.Formatter.FormatAll(snap);

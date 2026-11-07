@@ -8,6 +8,8 @@ public sealed class DeviceDefinition
     public int Port { get; set; } = 502;
     public byte UnitId { get; set; } = 1;
     public int PollIntervalMs { get; set; } = 200;
+    /// <summary>false = 停用：不轮询、不保存。</summary>
+    public bool Enabled { get; set; } = true;
 }
 
 public sealed class DevicesConfig

@@ -66,3 +66,50 @@ public class ConfigLoaderTests
         Assert.Contains("\"pollIntervalMs\"", File.ReadAllText(path));
     }
 }
+
+public class RegisterConfigValidationTests
+{
+    private static string Write(string json) { var p = Path.GetTempFileName(); File.WriteAllText(p, json); return p; }
+
+    [Fact]
+    public void Rejects_32BitRegister_OverlappingNext()
+    {
+        var p = Write("""{ "startRegister": 200, "count": 31, "triggerRegister": 230, "excelColumns": [], "registers": [ { "address": 212, "name": "a", "type": "number", "dataType": "int32" }, { "address": 213, "name": "b", "type": "number" } ] }""");
+        var ex = Assert.Throws<InvalidDataException>(() => ConfigLoader.LoadRegisters(p));
+        Assert.Contains("D213", ex.Message);
+    }
+
+    [Fact]
+    public void Rejects_32BitRegister_BeyondReadRange()
+    {
+        var p = Write("""{ "startRegister": 200, "count": 31, "triggerRegister": 229, "excelColumns": [], "registers": [ { "address": 230, "name": "a", "type": "number", "dataType": "float32" } ] }""");
+        Assert.Throws<InvalidDataException>(() => ConfigLoader.LoadRegisters(p));
+    }
+
+    [Fact]
+    public void Rejects_UnknownDataType_And_DisabledInExcelColumns()
+    {
+        var bad = Write("""{ "startRegister": 200, "count": 31, "triggerRegister": 230, "excelColumns": [], "registers": [ { "address": 200, "name": "a", "type": "number", "dataType": "int64" } ] }""");
+        Assert.Throws<InvalidDataException>(() => ConfigLoader.LoadRegisters(bad));
+        var disabled = Write("""{ "startRegister": 200, "count": 31, "triggerRegister": 230, "excelColumns": [201], "registers": [ { "address": 201, "name": "a", "type": "raw", "enabled": false } ] }""");
+        Assert.Throws<InvalidDataException>(() => ConfigLoader.LoadRegisters(disabled));
+    }
+
+    [Fact]
+    public void SampleConfig_HasSparesDisabled()
+    {
+        var cfg = ConfigLoader.LoadRegisters(ConfigLoaderTests.SamplePath);
+        Assert.False(cfg.Find(201)!.Enabled);
+        Assert.True(cfg.Find(200)!.Enabled);
+    }
+
+    [Fact]
+    public void SaveDevices_LeavesNoTempFile()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
+        ConfigLoader.SaveDevices(path, new DevicesConfig { Devices = { new DeviceDefinition { Id = "D", Ip = "1.2.3.4", Enabled = false } } });
+        Assert.True(File.Exists(path));
+        Assert.False(File.Exists(path + ".tmp"));
+        Assert.False(ConfigLoader.LoadDevices(path).Devices[0].Enabled);
+    }
+}

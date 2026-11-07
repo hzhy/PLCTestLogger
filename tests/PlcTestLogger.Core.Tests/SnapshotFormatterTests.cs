@@ -78,3 +78,79 @@ public class SnapshotFormatterTests
         Assert.Equal(19, row.Count);
     }
 }
+
+public class SnapshotFormatterDataTypeTests
+{
+    private static RegisterConfig Cfg(string wordOrder = "lowHigh") => new()
+    {
+        StartRegister = 200, Count = 31, TriggerRegister = 230, WordOrder = wordOrder,
+        Registers =
+        {
+            new RegisterDefinition { Address = 200, Name = "u16", Type = "number" },
+            new RegisterDefinition { Address = 201, Name = "i16", Type = "number", DataType = "int16" },
+            new RegisterDefinition { Address = 202, Name = "u32", Type = "number", DataType = "uint32" },
+            new RegisterDefinition { Address = 204, Name = "i32", Type = "number", DataType = "int32" },
+            new RegisterDefinition { Address = 206, Name = "f32", Type = "number", DataType = "float32", Decimals = 2, Unit = "℃" },
+            new RegisterDefinition { Address = 208, Name = "spare", Type = "raw", Enabled = false },
+            new RegisterDefinition { Address = 209, Name = "e32", Type = "enum", DataType = "uint32", Options = new() { ["70000"] = "big" } },
+        },
+        ExcelColumns = { 200, 202, 206 },
+    };
+
+    private static ushort[] Snap(params (int addr, ushort val)[] values)
+    {
+        var s = new ushort[31];
+        foreach (var (a, v) in values) s[a - 200] = v;
+        return s;
+    }
+
+    [Fact]
+    public void Int16_And_Uint16()
+    {
+        var f = new SnapshotFormatter(Cfg());
+        Assert.Equal("65535", f.FormatRegister(200, Snap((200, 65535))));
+        Assert.Equal("-1", f.FormatRegister(201, Snap((201, 65535))));
+    }
+
+    [Fact]
+    public void Uint32_LowWordFirst_ByDefault()
+    {
+        // 70000 = 0x00011170 → 低字 0x1170, 高字 0x0001
+        var f = new SnapshotFormatter(Cfg());
+        Assert.Equal("70000", f.FormatRegister(202, Snap((202, 0x1170), (203, 0x0001))));
+        Assert.Equal("big", f.FormatRegister(209, Snap((209, 0x1170), (210, 0x0001))));
+    }
+
+    [Fact]
+    public void Uint32_HighWordFirst_WhenConfigured()
+    {
+        var f = new SnapshotFormatter(Cfg("highLow"));
+        Assert.Equal("70000", f.FormatRegister(202, Snap((202, 0x0001), (203, 0x1170))));
+    }
+
+    [Fact]
+    public void Int32_Negative()
+    {
+        var f = new SnapshotFormatter(Cfg());
+        Assert.Equal("-2", f.FormatRegister(204, Snap((204, 0xFFFE), (205, 0xFFFF))));
+    }
+
+    [Fact]
+    public void Float32()
+    {
+        // 36.5f = 0x42120000 → 低字 0x0000, 高字 0x4212
+        var f = new SnapshotFormatter(Cfg());
+        Assert.Equal("36.50℃", f.FormatRegister(206, Snap((206, 0x0000), (207, 0x4212))));
+    }
+
+    [Fact]
+    public void FormatAll_SkipsDisabled_AndListsEachDefinitionOnce()
+    {
+        var f = new SnapshotFormatter(Cfg());
+        var all = f.FormatAll(Snap((202, 0x1170), (203, 0x0001)));
+        Assert.DoesNotContain(all, c => c.Address == 208);
+        Assert.Single(all, c => c.Address == 202);
+        Assert.Equal("0x1170 0x0001", all.Single(c => c.Address == 202).Raw);
+        Assert.Equal(6, all.Count);
+    }
+}

@@ -38,8 +38,28 @@ public sealed class RegisterDefinition
     /// <summary>number 类型可选：单位/倍率由另一寄存器（enum）的当前选项决定。</summary>
     public int? UnitFrom { get; set; }
 
-    /// <summary>按 16 位有符号整数解释。</summary>
+    /// <summary>按 16 位有符号整数解释（等价于 dataType = "int16"，保留以兼容旧配置）。</summary>
     public bool Signed { get; set; }
+
+    /// <summary>
+    /// 数据类型：uint16（默认）、int16、uint32、int32、float32。
+    /// 32 位类型占用本地址及下一地址两个寄存器（例如 D212+D213）。
+    /// </summary>
+    public string? DataType { get; set; }
+
+    /// <summary>32 位类型的字序，覆盖全局设置：lowHigh = 低字在前（汇川默认），highLow = 高字在前。</summary>
+    public string? WordOrder { get; set; }
+
+    /// <summary>false = 备用/未使用：不在实时界面显示，也不能作为 Excel 列。读取不受影响。</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>规范化后的数据类型名。</summary>
+    [JsonIgnore] public string EffectiveDataType => string.IsNullOrWhiteSpace(DataType) ? (Signed ? "int16" : "uint16") : DataType.Trim().ToLowerInvariant();
+
+    /// <summary>占用的寄存器个数：16 位为 1，32 位为 2。</summary>
+    [JsonIgnore] public int Width => EffectiveDataType is "uint32" or "int32" or "float32" ? 2 : 1;
+
+    public static readonly string[] KnownDataTypes = { "uint16", "int16", "uint32", "int32", "float32" };
 
     [JsonIgnore] public bool IsEnum => string.Equals(Type, "enum", StringComparison.OrdinalIgnoreCase);
     [JsonIgnore] public bool IsNumber => string.Equals(Type, "number", StringComparison.OrdinalIgnoreCase);
@@ -63,6 +83,9 @@ public sealed class RegisterConfig
     /// <summary>保存成功后是否把触发寄存器写回 0。</summary>
     public bool ResetTriggerAfterSave { get; set; } = false;
 
+    /// <summary>32 位数据的默认字序：lowHigh = 低字在前（汇川默认），highLow = 高字在前。</summary>
+    public string WordOrder { get; set; } = "lowHigh";
+
     public List<RegisterDefinition> Registers { get; set; } = new();
 
     /// <summary>输出到 Excel 的寄存器编号及顺序（保存时间列固定为第一列）。</summary>
@@ -74,4 +97,7 @@ public sealed class RegisterConfig
     public int IndexOf(int address) => address - StartRegister;
 
     public bool Contains(int address) => address >= StartRegister && address < StartRegister + Count;
+
+    /// <summary>寄存器定义是否完整落在读取范围内（含 32 位占用的第二个字）。</summary>
+    public bool Contains(RegisterDefinition def) => Contains(def.Address) && Contains(def.Address + def.Width - 1);
 }

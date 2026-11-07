@@ -37,7 +37,19 @@ public sealed class DeviceManager
 
     public void StartAll()
     {
-        foreach (var d in _devices.Devices) StartPoller(d);
+        foreach (var d in _devices.Devices.Where(d => d.Enabled)) StartPoller(d);
+    }
+
+    /// <summary>打开/关闭某台设备的轮询与保存，并写回 devices.json。</summary>
+    public async Task SetEnabledAsync(string id, bool enabled)
+    {
+        var d = _devices.Devices.FirstOrDefault(x => x.Id == id) ?? throw new ArgumentException($"设备 {id} 不存在");
+        if (d.Enabled == enabled && (enabled == _pollers.ContainsKey(id))) return;
+        d.Enabled = enabled;
+        ConfigLoader.SaveDevices(AppPaths.DevicesConfig, _devices);
+        if (enabled) { if (!_pollers.ContainsKey(id)) StartPoller(d); }
+        else if (_pollers.Remove(id, out var p)) await p.StopAsync();
+        AppLog.Info($"{id} {(enabled ? "已启用" : "已停用")}");
     }
 
     public async Task StopAllAsync()
@@ -56,7 +68,7 @@ public sealed class DeviceManager
         _devices.Devices.Add(d);
         try { ConfigLoader.SaveDevices(AppPaths.DevicesConfig, _devices); }
         catch { _devices.Devices.Remove(d); throw; }
-        StartPoller(d);
+        if (d.Enabled) StartPoller(d);
         AppLog.Info($"新增设备 {d.Id} {d.Ip}:{d.Port}");
     }
 

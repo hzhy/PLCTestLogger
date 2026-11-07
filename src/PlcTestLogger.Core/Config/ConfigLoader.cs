@@ -52,8 +52,11 @@ public static class ConfigLoader
 
     public static void SaveDevices(string path, DevicesConfig cfg)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        File.WriteAllText(path, JsonSerializer.Serialize(cfg, Options));
+        var full = Path.GetFullPath(path);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        var tmp = full + ".tmp";
+        File.WriteAllText(tmp, JsonSerializer.Serialize(cfg, Options));
+        File.Move(tmp, full, overwrite: true);
     }
 
     private static void Validate(RegisterConfig cfg, string path)
@@ -62,17 +65,31 @@ public static class ConfigLoader
             throw new InvalidDataException($"{path}: count 必须在 1..125 之间（单次 Modbus 读取上限）");
         if (!cfg.Contains(cfg.TriggerRegister))
             throw new InvalidDataException($"{path}: triggerRegister D{cfg.TriggerRegister} 不在读取范围 D{cfg.StartRegister}..D{cfg.StartRegister + cfg.Count - 1} 内");
-        foreach (var col in cfg.ExcelColumns)
+        if (cfg.WordOrder is not ("lowHigh" or "highLow"))
+            throw new InvalidDataException($"{path}: wordOrder 只能是 lowHigh 或 highLow");
+        var occupied = new Dictionary<int, RegisterDefinition>();
+        foreach (var r in cfg.Registers.OrderBy(r => r.Address))
         {
-            if (!cfg.Contains(col))
-                throw new InvalidDataException($"{path}: excelColumns 中的 D{col} 不在读取范围内");
-            if (cfg.Find(col) is null)
-                throw new InvalidDataException($"{path}: excelColumns 中的 D{col} 没有在 registers 中定义");
-        }
-        foreach (var r in cfg.Registers)
-        {
+            if (!RegisterDefinition.KnownDataTypes.Contains(r.EffectiveDataType))
+                throw new InvalidDataException($"{path}: D{r.Address} 的 dataType \"{r.DataType}\" 不支持，可选: {string.Join(", ", RegisterDefinition.KnownDataTypes)}");
+            if (r.WordOrder is not (null or "lowHigh" or "highLow"))
+                throw new InvalidDataException($"{path}: D{r.Address} 的 wordOrder 只能是 lowHigh 或 highLow");
+            if (!cfg.Contains(r))
+                throw new InvalidDataException($"{path}: D{r.Address}（{r.EffectiveDataType}，占 {r.Width} 个寄存器）超出读取范围 D{cfg.StartRegister}..D{cfg.StartRegister + cfg.Count - 1}");
+            for (var a = r.Address; a < r.Address + r.Width; a++)
+            {
+                if (occupied.TryGetValue(a, out var other))
+                    throw new InvalidDataException($"{path}: D{a} 被 D{other.Address}（{other.EffectiveDataType}）和 D{r.Address} 重复占用；32 位数据占两个连续寄存器，后一个地址不能再定义");
+                occupied[a] = r;
+            }
             if (r.UnitFrom is int uf && cfg.Find(uf) is null)
                 throw new InvalidDataException($"{path}: D{r.Address} 的 unitFrom 引用了未定义的 D{uf}");
+        }
+        foreach (var col in cfg.ExcelColumns)
+        {
+            var def = cfg.Find(col) ?? throw new InvalidDataException($"{path}: excelColumns 中的 D{col} 没有在 registers 中定义");
+            if (!def.Enabled)
+                throw new InvalidDataException($"{path}: excelColumns 中的 D{col} 是备用（enabled=false），不能输出到 Excel");
         }
     }
 }
