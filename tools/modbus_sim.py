@@ -1,12 +1,15 @@
 """极简 Modbus TCP 从站模拟器（功能码 03 读保持寄存器 / 06 写单个寄存器），用于本机联调。
 
-用法: python tools/modbus_sim.py [port] [script]
+用法: python tools/modbus_sim.py [port] [script] [duration_seconds] [init]
+  init 形如 "200=20,202=1,203=6"  覆盖初始寄存器值
   script 形如 "3:230=1;6:230=0;9:230=1,200=5,212=3"  表示第 3 秒把 D230 置 1，第 6 秒置 0，……
 """
 import socket, struct, sys, threading, time
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5020
 SCRIPT = sys.argv[2] if len(sys.argv) > 2 else "3:230=1;6:230=0;9:200=17,204=11,212=2,230=1;12:230=0"
+DURATION = float(sys.argv[3]) if len(sys.argv) > 3 else 20
+INIT = sys.argv[4] if len(sys.argv) > 4 else ""
 REGS = [0] * 1000
 # 初始值：JC003干湿式, 4H运转后试验, 12接口, 压力20, 200rpm, 温度36.5, 纯水100~200, 结果 0.01..
 init = {200: 23, 202: 5, 203: 12, 204: 1, 208: 200, 210: 365, 209: 4}
@@ -14,6 +17,8 @@ for i in range(12): init[212 + i] = 1
 init[219] = 2
 REGS[:] = [0] * 1000
 for k, v in init.items(): REGS[k] = v
+for a in filter(None, INIT.split(",")):
+    k, v = a.split("="); REGS[int(k)] = int(v)
 LOCK = threading.Lock()
 
 
@@ -63,7 +68,7 @@ srv.listen(5)
 print(f"[sim] listening on 127.0.0.1:{PORT}", flush=True)
 threading.Thread(target=scripted, daemon=True).start()
 srv.settimeout(1.0)
-end = time.time() + 20
+end = time.time() + DURATION
 while time.time() < end:
     try:
         c, _ = srv.accept()

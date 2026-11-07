@@ -1,4 +1,4 @@
-# PLC 测试结果记录器（PlcTestLogger）
+# 实验数据追溯系统（PlcLogger）
 
 读取汇川 Easy521-0808TP PLC 的 D200–D230 寄存器，当“测试完成标志”寄存器（默认 D230）由 0 变 1 时，
 把一次测试结果（常量型寄存器转换为语义化文本）追加写入 Excel；按设备、按月分文件保存。
@@ -12,7 +12,7 @@
 ## 目录结构（运行时，位于 exe 旁边）
 
 ```
-PlcTestLogger.App.exe
+PlcLogger.exe
 config/
   registers.json      寄存器含义、常量选项、Excel 列顺序、触发寄存器
   devices.json        设备列表（界面新增/删除设备时自动写回）
@@ -34,7 +34,9 @@ dotnet build -c Release                       # 编译
 dotnet publish src/PlcTestLogger.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 ```
 
-发布产物在 `publish/` 下，连同 `config/` 文件夹一起复制到目标电脑即可运行。
+发布产物在 `publish/` 下（主程序 `PlcLogger.exe`），连同 `config/` 文件夹一起复制到目标电脑即可运行。
+
+用户操作说明（含截图）见 [docs/manual/README.md](docs/manual/README.md)；两台模拟设备产生的 Excel 样例在 `samples/logger/`。
 
 ## 配置说明
 

@@ -14,6 +14,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AssemblyName>PlcLogger</AssemblyName>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Product>实验数据追溯系统</Product>
+    <AssemblyTitle>实验数据追溯系统</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>
