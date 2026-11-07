@@ -1,0 +1,95 @@
+# PLC 测试结果记录器（PlcTestLogger）
+
+读取汇川 Easy521-0808TP PLC 的 D200–D230 寄存器，当“测试完成标志”寄存器（默认 D230）由 0 变 1 时，
+把一次测试结果（常量型寄存器转换为语义化文本）追加写入 Excel；按设备、按月分文件保存。
+界面提供设备列表（编号 / IP / 连接状态）、所选设备的实时寄存器值、按天查询历史记录。
+
+## 运行环境
+
+- Windows 10/11，.NET 8（发布为自包含单文件 exe 时无需安装运行时）
+- PLC 开启 Modbus TCP（默认端口 502）
+
+## 目录结构（运行时，位于 exe 旁边）
+
+```
+PlcTestLogger.App.exe
+config/
+  registers.json      寄存器含义、常量选项、Excel 列顺序、触发寄存器
+  devices.json        设备列表（界面新增/删除设备时自动写回）
+logger/
+  <设备编号>/
+    2026-11.xlsx      一个月一个文件，首列为保存时间
+    failed.log        Excel 写入失败（如文件被 Excel 打开占用）时的兜底记录
+logs/
+  app-yyyyMMdd.log    程序运行日志
+```
+
+## 构建与发布
+
+```powershell
+dotnet test                                   # 运行单元测试
+dotnet build -c Release                       # 编译
+dotnet publish src/PlcTestLogger.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+```
+
+发布产物在 `publish/` 下，连同 `config/` 文件夹一起复制到目标电脑即可运行。
+
+## 配置说明
+
+### config/devices.json
+
+```json
+{
+  "devices": [
+    { "id": "DEV01", "ip": "192.168.1.10", "port": 502, "unitId": 1, "pollIntervalMs": 200 }
+  ]
+}
+```
+
+- `id`：设备编号，也是 `logger/` 下子文件夹名。
+- `pollIntervalMs`：轮询周期（毫秒）。
+
+### config/registers.json
+
+| 字段 | 说明 |
+|------|------|
+| `dRegisterBase` | D0 对应的 Modbus 保持寄存器地址。汇川 Easy 系列 D 元件默认从 0 开始，即 D200 → 地址 200。若实际映射不同在此修改。 |
+| `startRegister` / `count` | 一次连续读取的起始 D 编号与个数（默认 D200 起 31 个）。 |
+| `triggerRegister` | “测试完成、可以保存”的标志寄存器编号（默认 230）。由 0 变 1 时触发一次保存；保持为 1 不重复保存；程序启动时若已为 1 不触发。 |
+| `resetTriggerAfterSave` | 为 `true` 时保存成功后把触发寄存器写回 0（默认 `false`，不向 PLC 写入）。 |
+| `registers[]` | 每个寄存器的定义，见下。 |
+| `excelColumns` | 输出到 Excel 的寄存器编号及列顺序（“保存时间”固定为第一列）。 |
+
+寄存器定义 `registers[]` 的字段：
+
+| 字段 | 适用 type | 说明 |
+|------|-----------|------|
+| `address` | 全部 | D 编号 |
+| `name` | 全部 | 列名 / 显示名 |
+| `type` | 全部 | `enum` 常量选项；`number` 数值；`raw` 原始整数 |
+| `options` | enum | `{"寄存器值": "语义文本"}`，例如 `"1": "JX321干式"`。未匹配的值输出 `K<值>` |
+| `scale` / `decimals` / `unit` | number | 显示值 = 原始值 × scale，保留 decimals 位小数，附单位 |
+| `unitFrom` | number | 单位 / 倍率 / 小数位由另一寄存器（enum）的当前选项决定，例如接口测试结果随“测试方法”切换 PsiG 或 ml/min |
+| `resultUnits` / `resultScales` / `resultDecimals` | enum | 配合 `unitFrom`：本寄存器取某选项时，引用它的结果列使用的单位 / 倍率 / 小数位 |
+| `signed` | 全部 | 按 16 位有符号整数解释 |
+
+> 示例配置中的倍率（温度 ×0.1、压力 ×0.01、流量 ×0.1）是根据样例 Excel 推测的，请按 PLC 实际存储方式校正。
+
+## 界面
+
+- **设备列表**：设备编号、IP、端口、连接状态（已连接 / 重连中 / 未连接）、本次运行保存条数、最近保存时间、最近错误。
+- **实时数据**：所选设备 D200–D230 的原始值与语义化内容，随轮询实时刷新。
+- **新增设备 / 删除设备**：立即生效并写回 `config/devices.json`。
+- **查询记录**：选择设备和日期，列出当天全部保存记录（可直接复制到 Excel）。
+- **打开记录文件夹**：打开 `logger/` 目录。
+
+## 本机联调
+
+`tools/modbus_sim.py` 是一个极简 Modbus TCP 从站模拟器，可在没有 PLC 时验证整条链路：
+
+```powershell
+py -3.12 tools/modbus_sim.py 5020
+```
+
+把 `devices.json` 中设备的 IP 改为 `127.0.0.1`、端口 `5020`，启动程序，模拟器会按脚本把 D230 置 1，
+`logger/DEV01/` 下应出现当月 xlsx。
