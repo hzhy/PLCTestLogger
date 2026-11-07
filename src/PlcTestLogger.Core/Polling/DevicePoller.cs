@@ -49,7 +49,7 @@ public sealed class DevicePoller
     {
         if (_cts is null || _loop is null) return;
         _cts.Cancel();
-        try { await _loop; } catch (OperationCanceledException) { }
+        try { await _loop.ConfigureAwait(false); } catch (OperationCanceledException) { }
         _loop = null;
         _cts.Dispose();
         _cts = null;
@@ -66,9 +66,7 @@ public sealed class DevicePoller
             {
                 reader = _factory.Create(_device);
                 _edge.Reset();
-                SetState(ConnectionState.Connected);
-                delay = ReconnectDelayMs;
-                await PollLoopAsync(reader, ct);
+                await PollLoopAsync(reader, ct, () => { SetState(ConnectionState.Connected); delay = ReconnectDelayMs; }).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
             catch (Exception ex)
@@ -83,12 +81,12 @@ public sealed class DevicePoller
             }
 
             if (ct.IsCancellationRequested) break;
-            try { await Task.Delay(delay, ct); } catch (OperationCanceledException) { break; }
+            try { await Task.Delay(delay, ct).ConfigureAwait(false); } catch (OperationCanceledException) { break; }
             delay = Math.Min(delay * 2, ReconnectMaxDelayMs);
         }
     }
 
-    private async Task PollLoopAsync(IRegisterReader reader, CancellationToken ct)
+    private async Task PollLoopAsync(IRegisterReader reader, CancellationToken ct, Action onFirstRead)
     {
         var start = checked((ushort)(_cfg.DRegisterBase + _cfg.StartRegister));
         var count = checked((ushort)_cfg.Count);
@@ -97,7 +95,8 @@ public sealed class DevicePoller
 
         while (!ct.IsCancellationRequested)
         {
-            var snapshot = await reader.ReadAsync(start, count, ct);
+            var snapshot = await reader.ReadAsync(start, count, ct).ConfigureAwait(false);
+            if (ReadCount == 0 || State != ConnectionState.Connected) onFirstRead();
             ReadCount++;
             LastSnapshot = snapshot;
             SnapshotUpdated?.Invoke(snapshot);
@@ -106,13 +105,14 @@ public sealed class DevicePoller
             {
                 var copy = (ushort[])snapshot.Clone();
                 var at = DateTime.Now;
+                var saved = true;
                 try { SaveTriggered?.Invoke(copy, at); }
-                catch (Exception ex) { LastError = ex.Message; ErrorOccurred?.Invoke("保存失败: " + ex.Message); }
-                if (_cfg.ResetTriggerAfterSave)
-                    await reader.WriteAsync(triggerAddr, 0, ct);
+                catch (Exception ex) { saved = false; LastError = ex.Message; ErrorOccurred?.Invoke("保存失败: " + ex.Message); }
+                if (_cfg.ResetTriggerAfterSave && saved)
+                    await reader.WriteAsync(triggerAddr, 0, ct).ConfigureAwait(false);
             }
 
-            await Task.Delay(Math.Max(1, _device.PollIntervalMs), ct);
+            await Task.Delay(Math.Max(1, _device.PollIntervalMs), ct).ConfigureAwait(false);
         }
     }
 

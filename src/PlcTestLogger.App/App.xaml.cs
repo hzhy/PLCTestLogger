@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using PlcTestLogger.App.Services;
 using PlcTestLogger.Core.Config;
+using PlcTestLogger.Core.Polling;
 using PlcTestLogger.Core.Storage;
 
 namespace PlcTestLogger.App;
@@ -47,7 +48,8 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        try { _manager?.StopAllAsync().Wait(3000); } catch { }
+        AppLog.Info("正在退出，停止轮询...");
+        try { _manager?.StopAllAsync().Wait(10000); } catch { }
         AppLog.Info("退出");
         base.OnExit(e);
     }

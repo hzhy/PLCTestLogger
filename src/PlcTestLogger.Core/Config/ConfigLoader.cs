@@ -9,6 +9,7 @@ public static class ConfigLoader
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
         WriteIndented = true,
@@ -27,7 +28,26 @@ public static class ConfigLoader
     public static DevicesConfig LoadDevices(string path)
     {
         if (!File.Exists(path)) return new DevicesConfig();
-        return JsonSerializer.Deserialize<DevicesConfig>(File.ReadAllText(path), Options) ?? new DevicesConfig();
+        var cfg = JsonSerializer.Deserialize<DevicesConfig>(File.ReadAllText(path), Options) ?? new DevicesConfig();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var d in cfg.Devices)
+        {
+            var err = ValidateDevice(d);
+            if (err is not null) throw new InvalidDataException($"{path}: 设备 \"{d.Id}\" {err}");
+            if (!seen.Add(d.Id)) throw new InvalidDataException($"{path}: 设备编号 \"{d.Id}\" 重复（不区分大小写）");
+        }
+        return cfg;
+    }
+
+    /// <summary>返回 null 表示合法，否则为错误描述。</summary>
+    public static string? ValidateDevice(DeviceDefinition d)
+    {
+        if (string.IsNullOrWhiteSpace(d.Id)) return "设备编号不能为空";
+        if (d.Id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || d.Id.Trim() != d.Id) return "设备编号不能包含 \\ / : * ? \" < > | 等字符或首尾空格";
+        if (!System.Net.IPAddress.TryParse(d.Ip, out _)) return "IP 地址格式不正确";
+        if (d.Port is < 1 or > 65535) return "端口必须在 1~65535 之间";
+        if (d.PollIntervalMs < 20) return "轮询周期不能小于 20 毫秒";
+        return null;
     }
 
     public static void SaveDevices(string path, DevicesConfig cfg)

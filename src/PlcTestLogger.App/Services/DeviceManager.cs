@@ -1,3 +1,4 @@
+using System.IO;
 using PlcTestLogger.Core.Config;
 using PlcTestLogger.Core.Mapping;
 using PlcTestLogger.Core.Polling;
@@ -41,18 +42,20 @@ public sealed class DeviceManager
 
     public async Task StopAllAsync()
     {
-        foreach (var p in _pollers.Values) await p.StopAsync();
+        var pollers = _pollers.Values.ToList();
         _pollers.Clear();
+        await Task.WhenAll(pollers.Select(p => p.StopAsync())).ConfigureAwait(false);
     }
 
     public DevicePoller? GetPoller(string id) => _pollers.TryGetValue(id, out var p) ? p : null;
 
     public void AddDevice(DeviceDefinition d)
     {
-        if (string.IsNullOrWhiteSpace(d.Id)) throw new ArgumentException("设备编号不能为空");
-        if (_devices.Devices.Any(x => x.Id == d.Id)) throw new ArgumentException($"设备编号 {d.Id} 已存在");
+        if (ConfigLoader.ValidateDevice(d) is { } err) throw new ArgumentException(err);
+        if (_devices.Devices.Any(x => string.Equals(x.Id, d.Id, StringComparison.OrdinalIgnoreCase))) throw new ArgumentException($"设备编号 {d.Id} 已存在");
         _devices.Devices.Add(d);
-        ConfigLoader.SaveDevices(AppPaths.DevicesConfig, _devices);
+        try { ConfigLoader.SaveDevices(AppPaths.DevicesConfig, _devices); }
+        catch { _devices.Devices.Remove(d); throw; }
         StartPoller(d);
         AppLog.Info($"新增设备 {d.Id} {d.Ip}:{d.Port}");
     }
@@ -80,8 +83,21 @@ public sealed class DeviceManager
     {
         var cells = Formatter.Format(snapshot);
         var path = Store.GetFilePath(deviceId, at);
-        Store.Append(deviceId, at, Formatter.Headers, cells.Select(c => c.Text).ToList());
-        AppLog.Info($"{deviceId} 保存记录 -> {path}");
+        var texts = cells.Select(c => c.Text).ToList();
+        AppendResult result;
+        try { result = Store.Append(deviceId, at, Formatter.Headers, texts); }
+        catch (Exception ex)
+        {
+            AppLog.Error($"{deviceId} 记录丢失! {at:yyyy-MM-dd HH:mm:ss}	{string.Join("	", texts)}	{ex.Message}");
+            throw;
+        }
+        if (result == AppendResult.Pending)
+        {
+            var msg = $"Excel 被占用（请关闭 {Path.GetFileName(path)}），记录已暂存，下次写入时自动合并";
+            AppLog.Error($"{deviceId} {msg}: {at:yyyy-MM-dd HH:mm:ss}	{string.Join("	", texts)}");
+            ErrorOccurred?.Invoke(deviceId, msg);
+        }
+        else AppLog.Info($"{deviceId} 保存记录 -> {path}");
         RecordSaved?.Invoke(new SavedRecord(deviceId, at, path, cells));
     }
 }

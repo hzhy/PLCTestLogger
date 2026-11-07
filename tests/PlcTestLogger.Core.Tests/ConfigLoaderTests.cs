@@ -43,4 +43,26 @@ public class ConfigLoaderTests
         Assert.Equal((byte)2, d.UnitId);
         Assert.Equal(500, d.PollIntervalMs);
     }
+
+    [Theory]
+    [InlineData("""{ "devices": [ { "id": "DEV01", "ip": "10.0.0.1" }, { "id": "dev01", "ip": "10.0.0.2" } ] }""")]
+    [InlineData("""{ "devices": [ { "id": "", "ip": "10.0.0.1" } ] }""")]
+    [InlineData("""{ "devices": [ { "id": "A", "ip": "not-an-ip" } ] }""")]
+    [InlineData("""{ "devices": [ { "id": "A", "ip": "10.0.0.1", "port": 70000 } ] }""")]
+    [InlineData("""{ "devices": [ { "id": "A", "ip": "10.0.0.1", "pollIntervalMs": 0 } ] }""")]
+    [InlineData("""{ "devices": [ { "id": "A/B", "ip": "10.0.0.1" } ] }""")]
+    public void LoadDevices_RejectsInvalidEntries(string json)
+    {
+        var tmp = Path.GetTempFileName();
+        File.WriteAllText(tmp, json);
+        Assert.Throws<InvalidDataException>(() => ConfigLoader.LoadDevices(tmp));
+    }
+
+    [Fact]
+    public void SaveDevices_WritesCamelCase()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
+        ConfigLoader.SaveDevices(path, new DevicesConfig { Devices = { new DeviceDefinition { Id = "D", Ip = "1.2.3.4" } } });
+        Assert.Contains("\"pollIntervalMs\"", File.ReadAllText(path));
+    }
 }

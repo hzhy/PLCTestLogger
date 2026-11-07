@@ -65,18 +65,72 @@ public class ExcelLogStoreTests : IDisposable
     }
 
     [Fact]
-    public void Append_WhenFileLocked_WritesFailedLogAndThrows()
+    public void Append_WhenFileLocked_QueuesPending_ThenMergesOnNextWrite()
     {
         var store = new ExcelLogStore(_root) { RetryDelayMs = 1 };
         var t = new DateTime(2026, 11, 7, 9, 0, 0);
-        store.Append("DEV01", t, Headers, new[] { "a", "b" });
-        using (File.Open(store.GetFilePath("DEV01", t), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        Assert.Equal(AppendResult.Written, store.Append("DEV01", t, Headers, new[] { "a", "b" }));
+        var path = store.GetFilePath("DEV01", t);
+        using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
         {
-            Assert.Throws<ExcelWriteException>(() => store.Append("DEV01", t.AddMinutes(1), Headers, new[] { "c", "d" }));
+            Assert.Equal(AppendResult.Pending, store.Append("DEV01", t.AddMinutes(1), Headers, new[] { "c", "d" }));
+            // 被占用期间，查询仍能看到暂存的记录
+            var rows = store.QueryDay("DEV01", new DateOnly(2026, 11, 7));
+            Assert.Equal(3, rows.Count);
+            Assert.Equal("c", rows[2][1]);
         }
-        var failed = Path.Combine(_root, "DEV01", "failed.log");
-        Assert.True(File.Exists(failed));
-        Assert.Contains("2026-11-07 09:01:00", File.ReadAllText(failed));
-        Assert.Contains("c\td", File.ReadAllText(failed));
+        Assert.True(File.Exists(store.GetPendingPath("DEV01", t)));
+
+        Assert.Equal(AppendResult.Written, store.Append("DEV01", t.AddMinutes(2), Headers, new[] { "e", "f" }));
+        Assert.False(File.Exists(store.GetPendingPath("DEV01", t)));
+        using var wb = new XLWorkbook(path);
+        var ws = wb.Worksheets.First();
+        Assert.Equal(4, ws.LastRowUsed()!.RowNumber());
+        Assert.Equal("2026-11-07 09:01:00", ws.Cell(3, 1).GetString());
+        Assert.Equal("c", ws.Cell(3, 2).GetString());
+        Assert.Equal("e", ws.Cell(4, 2).GetString());
+    }
+
+    [Fact]
+    public void Append_LeavesNoTempFiles_AndExistingFileIsReplacedAtomically()
+    {
+        var store = new ExcelLogStore(_root);
+        var t = new DateTime(2026, 11, 7, 9, 0, 0);
+        store.Append("DEV01", t, Headers, new[] { "a", "b" });
+        store.Append("DEV01", t.AddMinutes(1), Headers, new[] { "c", "d" });
+        var files = Directory.GetFiles(Path.Combine(_root, "DEV01")).Select(Path.GetFileName).ToArray();
+        Assert.Equal(new[] { "2026-11.xlsx" }, files);
+    }
+
+    [Fact]
+    public void Append_CorruptExistingFile_IsMovedAsideAndNewFileStarted()
+    {
+        var store = new ExcelLogStore(_root) { RetryDelayMs = 1 };
+        var t = new DateTime(2026, 11, 7, 9, 0, 0);
+        var path = store.GetFilePath("DEV01", t);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "this is not a zip");
+        Assert.Equal(AppendResult.Written, store.Append("DEV01", t, Headers, new[] { "a", "b" }));
+        Assert.Single(Directory.GetFiles(Path.Combine(_root, "DEV01"), "2026-11.corrupt-*.xlsx"));
+        var rows = store.QueryDay("DEV01", new DateOnly(2026, 11, 7));
+        Assert.Equal(2, rows.Count);
+    }
+
+    [Fact]
+    public void Append_HeaderChangedMidMonth_StartsVersionedFile_AndQueryMergesColumns()
+    {
+        var store = new ExcelLogStore(_root);
+        var t = new DateTime(2026, 11, 7, 9, 0, 0);
+        store.Append("DEV01", t, new[] { "产品编号", "温度" }, new[] { "a", "b" });
+        store.Append("DEV01", t.AddMinutes(1), new[] { "产品编号", "压力" }, new[] { "c", "d" });
+        Assert.True(File.Exists(Path.Combine(_root, "DEV01", "2026-11_v2.xlsx")));
+        store.Append("DEV01", t.AddMinutes(2), new[] { "产品编号", "压力" }, new[] { "e", "f" });
+        Assert.False(File.Exists(Path.Combine(_root, "DEV01", "2026-11_v3.xlsx")));
+
+        var rows = store.QueryDay("DEV01", new DateOnly(2026, 11, 7));
+        Assert.Equal(new[] { "保存时间", "产品编号", "温度", "压力" }, rows[0]);
+        Assert.Equal(3, rows.Count - 1);
+        Assert.Equal(new[] { "2026-11-07 09:00:00", "a", "b", "" }, rows[1]);
+        Assert.Equal(new[] { "2026-11-07 09:01:00", "c", "", "d" }, rows[2]);
     }
 }

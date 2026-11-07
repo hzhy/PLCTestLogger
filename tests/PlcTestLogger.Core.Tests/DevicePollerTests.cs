@@ -79,10 +79,72 @@ public class DevicePollerTests
         Assert.Equal((230, 0), reader.Writes[0]);
     }
 
+    [Fact]
+    public async Task ResetTriggerAfterSave_SkipsWriteWhenSaveHandlerThrows()
+    {
+        var reader = new ScriptedReader(new Func<ushort[]>[] { () => Snap(0), () => Snap(1), () => Snap(1) });
+        var cfg = Cfg(); cfg.ResetTriggerAfterSave = true;
+        var poller = new DevicePoller(Dev(), cfg, new Factory(reader));
+        poller.SaveTriggered += (_, _) => throw new IOException("disk full");
+        poller.Start();
+        await WaitUntil(() => poller.ReadCount >= 3);
+        await poller.StopAsync();
+        Assert.Empty(reader.Writes);
+        Assert.Contains("disk full", poller.LastError);
+    }
+
+    [Fact]
+    public async Task Connected_OnlyAfterFirstSuccessfulRead()
+    {
+        var reader = new ScriptedReader(new Func<ushort[]>[] { () => throw new IOException("modbus exception") });
+        var poller = new DevicePoller(Dev(), Cfg(), new Factory(reader)) { ReconnectDelayMs = 1 };
+        var states = new List<ConnectionState>();
+        poller.StateChanged += s => states.Add(s);
+        poller.Start();
+        await WaitUntil(() => poller.ReadCount >= 1);
+        await poller.StopAsync();
+        Assert.Equal(ConnectionState.Reconnecting, states[0]);
+    }
+
     private static async Task WaitUntil(Func<bool> cond, int timeoutMs = 3000)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (!cond() && sw.ElapsedMilliseconds < timeoutMs) await Task.Delay(5);
         Assert.True(cond(), "timeout waiting for condition");
+    }
+}
+
+public class DevicePollerShutdownTests
+{
+    /// <summary>模拟 WPF Dispatcher 被阻塞：Post 的回调永远不执行。</summary>
+    private sealed class BlockedContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state) { /* never runs */ }
+    }
+
+    private sealed class SlowReader : IRegisterReader
+    {
+        public async Task<ushort[]> ReadAsync(ushort s, ushort c, CancellationToken ct) { await Task.Delay(10, ct); return new ushort[c]; }
+        public Task WriteAsync(ushort a, ushort v, CancellationToken ct) => Task.CompletedTask;
+        public void Dispose() { }
+    }
+    private sealed class SlowFactory : IRegisterReaderFactory { public IRegisterReader Create(DeviceDefinition d) => new SlowReader(); }
+
+    [Fact]
+    public void StopAsync_CompletesEvenWhenCallerContextIsBlocked()
+    {
+        var poller = new DevicePoller(new DeviceDefinition { Id = "X", Ip = "127.0.0.1", PollIntervalMs = 5 },
+            new RegisterConfig { StartRegister = 200, Count = 31, TriggerRegister = 230 }, new SlowFactory());
+        poller.Start();
+        Thread.Sleep(50);
+        var prev = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(new BlockedContext());
+        try
+        {
+            var stop = poller.StopAsync();
+            Assert.True(stop.Wait(2000), "StopAsync did not complete while the caller's context was blocked");
+            Assert.Equal(ConnectionState.Disconnected, poller.State);
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(prev); }
     }
 }
