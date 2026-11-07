@@ -9,23 +9,25 @@
             <ColumnDefinition Width="220"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+            <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
         </Grid.RowDefinitions>
         <Grid.Resources>
             <Style TargetType="TextBlock"><Setter Property="Margin" Value="0,6,12,6"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
             <Style TargetType="TextBox"><Setter Property="Margin" Value="0,4"/><Setter Property="Padding" Value="4,3"/></Style>
+            <Style x:Key="Required" TargetType="Run"><Setter Property="Foreground" Value="#D32F2F"/><Setter Property="FontWeight" Value="Bold"/></Style>
         </Grid.Resources>
-        <TextBlock Grid.Row="0" Text="设备编号"/>
-        <TextBox Grid.Row="0" Grid.Column="1" x:Name="IdBox"/>
-        <TextBlock Grid.Row="1" Text="IP 地址"/>
-        <TextBox Grid.Row="1" Grid.Column="1" x:Name="IpBox"/>
-        <TextBlock Grid.Row="2" Text="端口"/>
-        <TextBox Grid.Row="2" Grid.Column="1" x:Name="PortBox" Text="502"/>
+        <TextBlock Grid.Row="0"><Run Text="设备编号 "/><Run Text="*" Style="{StaticResource Required}"/></TextBlock>
+        <TextBox Grid.Row="0" Grid.Column="1" x:Name="IdBox" ToolTip="必填，也是记录文件夹名"/>
+        <TextBlock Grid.Row="1"><Run Text="IP 地址 "/><Run Text="*" Style="{StaticResource Required}"/></TextBlock>
+        <TextBox Grid.Row="1" Grid.Column="1" x:Name="IpBox" ToolTip="必填，例如 192.168.1.10"/>
+        <TextBlock Grid.Row="2"><Run Text="端口 "/><Run Text="*" Style="{StaticResource Required}"/></TextBlock>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="PortBox" Text="502" ToolTip="必填，Modbus TCP 默认 502"/>
         <TextBlock Grid.Row="3" Text="Modbus 站号 (UnitId)"/>
         <TextBox Grid.Row="3" Grid.Column="1" x:Name="UnitBox" Text="1"/>
         <TextBlock Grid.Row="4" Text="轮询周期 (ms)"/>
-        <TextBox Grid.Row="4" Grid.Column="1" x:Name="IntervalBox" Text="200"/>
-        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="IntervalBox" Text="200" ToolTip="不能低于 200 毫秒"/>
+        <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Text="带 * 的为必填项；轮询周期最小 200 毫秒。" FontSize="11" Foreground="#777" Margin="0,4,0,0"/>
+        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="确定" IsDefault="True" Width="80" Margin="0,0,8,0" Click="Ok_Click"/>
             <Button Content="取消" IsCancel="True" Width="80"/>
         </StackPanel>

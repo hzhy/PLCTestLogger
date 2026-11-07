@@ -49,13 +49,21 @@ public class ConfigLoaderTests
     [InlineData("""{ "devices": [ { "id": "", "ip": "10.0.0.1" } ] }""")]
     [InlineData("""{ "devices": [ { "id": "A", "ip": "not-an-ip" } ] }""")]
     [InlineData("""{ "devices": [ { "id": "A", "ip": "10.0.0.1", "port": 70000 } ] }""")]
-    [InlineData("""{ "devices": [ { "id": "A", "ip": "10.0.0.1", "pollIntervalMs": 0 } ] }""")]
+    [InlineData("""{ "devices": [ { "id": "A", "ip": "10.0.0.1", "pollIntervalMs": 150 } ] }""")]
     [InlineData("""{ "devices": [ { "id": "A/B", "ip": "10.0.0.1" } ] }""")]
     public void LoadDevices_RejectsInvalidEntries(string json)
     {
         var tmp = Path.GetTempFileName();
         File.WriteAllText(tmp, json);
         Assert.Throws<InvalidDataException>(() => ConfigLoader.LoadDevices(tmp));
+    }
+
+    [Fact]
+    public void LoadDevices_Accepts200msInterval()
+    {
+        var tmp = Path.GetTempFileName();
+        File.WriteAllText(tmp, """{ "devices": [ { "id": "A", "ip": "10.0.0.1", "pollIntervalMs": 200 } ] }""");
+        Assert.Equal(200, ConfigLoader.LoadDevices(tmp).Devices[0].PollIntervalMs);
     }
 
     [Fact]

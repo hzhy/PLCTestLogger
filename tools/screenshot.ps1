@@ -52,15 +52,26 @@ function Capture([IntPtr]$h, [string]$name) {
   "saved $path ($w x $hh)"
 }
 
+# 通过 UI Automation 的 InvokePattern 触发按钮；放在后台 runspace 里，避免模态对话框阻塞脚本。
+# 不依赖窗口是否在最前面，也不会误点到别的窗口。
+$script:runspaces = @()
 function ClickButton([IntPtr]$h, [string]$name) {
-  [Native]::SetForegroundWindow($h) | Out-Null; Start-Sleep -Milliseconds 300
+  [Native]::ShowWindow($h, 9) | Out-Null; [Native]::SetForegroundWindow($h) | Out-Null; Start-Sleep -Milliseconds 300
   $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
   $cond = New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::NameProperty), $name
   $btn = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
   if ($null -eq $btn) { throw "button '$name' not found" }
-  $pt = $btn.GetClickablePoint()
-  [Native]::SetCursorPos([int]$pt.X, [int]$pt.Y) | Out-Null; Start-Sleep -Milliseconds 200
-  [Native]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 80; [Native]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero)
+  $ps = [PowerShell]::Create()
+  [void]$ps.AddScript({
+    param($handle, $btnName)
+    Add-Type -AssemblyName UIAutomationClient; Add-Type -AssemblyName UIAutomationTypes
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$handle)
+    $cond = New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::NameProperty), $btnName
+    $b = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
+    $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+  }).AddArgument([Int64]$h).AddArgument($name)
+  [void]$ps.BeginInvoke()
+  $script:runspaces += $ps
 }
 
 function WaitWindow([string]$title, [int]$timeoutMs = 5000) {

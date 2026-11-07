@@ -1,4 +1,3 @@
-using System.Net;
 using System.Windows;
 using PlcTestLogger.Core.Config;
 
@@ -18,14 +17,16 @@ public partial class AddDeviceWindow : Window
     {
         var id = IdBox.Text.Trim();
         var ip = IpBox.Text.Trim();
-        if (id.Length == 0) { Warn("请输入设备编号。"); return; }
-        if (id.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0) { Warn("设备编号不能包含 \\ / : * ? \" < > | 等字符。"); return; }
-        if (!IPAddress.TryParse(ip, out _)) { Warn("IP 地址格式不正确。"); return; }
-        if (!int.TryParse(PortBox.Text, out var port) || port is < 1 or > 65535) { Warn("端口必须是 1~65535 的整数。"); return; }
-        if (!byte.TryParse(UnitBox.Text, out var unit)) { Warn("站号必须是 0~255 的整数。"); return; }
-        if (!int.TryParse(IntervalBox.Text, out var interval) || interval < 20) { Warn("轮询周期必须是不小于 20 的整数（毫秒）。"); return; }
+        if (id.Length == 0) { Warn("设备编号为必填项。"); IdBox.Focus(); return; }
+        if (ip.Length == 0) { Warn("IP 地址为必填项。"); IpBox.Focus(); return; }
+        if (PortBox.Text.Trim().Length == 0) { Warn("端口为必填项。"); PortBox.Focus(); return; }
+        if (!int.TryParse(PortBox.Text, out var port)) { Warn("端口必须是 1~65535 的整数。"); PortBox.Focus(); return; }
+        if (!byte.TryParse(UnitBox.Text, out var unit)) { Warn("站号必须是 0~255 的整数。"); UnitBox.Focus(); return; }
+        if (!int.TryParse(IntervalBox.Text, out var interval)) { Warn($"轮询周期必须是不低于 {DeviceDefinition.MinPollIntervalMs} 的整数（毫秒）。"); IntervalBox.Focus(); return; }
 
-        Result = new DeviceDefinition { Id = id, Ip = ip, Port = port, UnitId = unit, PollIntervalMs = interval };
+        var def = new DeviceDefinition { Id = id, Ip = ip, Port = port, UnitId = unit, PollIntervalMs = interval };
+        if (ConfigLoader.ValidateDevice(def) is { } err) { Warn(err + "。"); return; }
+        Result = def;
         DialogResult = true;
     }
 

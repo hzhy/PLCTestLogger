@@ -2,6 +2,9 @@ namespace PlcTestLogger.Core.Config;
 
 public sealed class DeviceDefinition
 {
+    /// <summary>轮询周期下限（毫秒）。</summary>
+    public const int MinPollIntervalMs = 200;
+
     /// <summary>设备编号，也是 logger 下的子文件夹名。</summary>
     public string Id { get; set; } = "";
     public string Ip { get; set; } = "";
