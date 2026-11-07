@@ -1,0 +1,8 @@
+bin/
+obj/
+.superpowers/
+*.user
+.vs/
+logger/
+logs/
+publish/

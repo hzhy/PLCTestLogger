@@ -1,0 +1,11 @@
+{
+  "devices": [
+    {
+      "id": "DEV01",
+      "ip": "192.168.1.10",
+      "port": 502,
+      "unitId": 1,
+      "pollIntervalMs": 200
+    }
+  ]
+}
