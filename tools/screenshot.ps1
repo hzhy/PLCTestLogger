@@ -18,6 +18,7 @@ public static class Native {
   [DllImport("user32.dll")] public static extern void mouse_event(uint f, uint x, uint y, uint d, UIntPtr e);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
   [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, int attr, out RECT r, int size);
+  [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
   public delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
@@ -45,7 +46,17 @@ function Capture([IntPtr]$h, [string]$name) {
   $w = $r.R - $r.L; $hh = $r.B - $r.T
   $bmp = New-Object System.Drawing.Bitmap $w, $hh
   $g = [System.Drawing.Graphics]::FromImage($bmp)
-  $g.CopyFromScreen($r.L, $r.T, 0, 0, (New-Object System.Drawing.Size $w, $hh))
+  try { $g.CopyFromScreen($r.L, $r.T, 0, 0, (New-Object System.Drawing.Size $w, $hh)) }
+  catch {
+    # 锁屏等情况下屏幕不可读：改用 PrintWindow(PW_RENDERFULLCONTENT) 让窗口自己渲染
+    $fr = New-Object Native+RECT; [Native]::GetWindowRect($h, [ref]$fr) | Out-Null
+    $full = New-Object System.Drawing.Bitmap ($fr.R - $fr.L), ($fr.B - $fr.T)
+    $fg = [System.Drawing.Graphics]::FromImage($full); $hdc = $fg.GetHdc()
+    [Native]::PrintWindow($h, $hdc, 2) | Out-Null
+    $fg.ReleaseHdc($hdc); $fg.Dispose()
+    $g.DrawImage($full, 0, 0, (New-Object System.Drawing.Rectangle ($r.L - $fr.L), ($r.T - $fr.T), $w, $hh), [System.Drawing.GraphicsUnit]::Pixel)
+    $full.Dispose()
+  }
   $g.Dispose()
   $path = Join-Path $OutDir "$name.png"
   $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
@@ -90,6 +101,48 @@ Start-Sleep -Milliseconds 300
 Capture $dlg "add-device"
 [Native]::PostMessage($dlg, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
 Start-Sleep -Milliseconds 500
+
+# 编辑设备：先点一次（设备仍启用）验证提示，再停用后打开编辑窗口
+ClickButton $main "编辑设备"
+$blocked = WaitWindow "编辑设备" 8000
+Start-Sleep -Milliseconds 300
+Capture $blocked "edit-device-blocked"
+[Native]::PostMessage($blocked, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+Start-Sleep -Milliseconds 500
+
+function FirstCheckBox([IntPtr]$h) {
+  $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
+  $cond = New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::ControlTypeProperty), ([System.Windows.Automation.ControlType]::CheckBox)
+  $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
+}
+function SetText([IntPtr]$h, [string]$autoId, [string]$value) {
+  $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
+  $cond = New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::AutomationIdProperty), $autoId
+  $el = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
+  $el.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($value)
+}
+$cb = FirstCheckBox $main
+$cb.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+Start-Sleep -Milliseconds 800
+ClickButton $main "编辑设备"
+$edit = WaitWindow "编辑设备" 8000
+Start-Sleep -Milliseconds 300
+Capture $edit "edit-device"
+if ($env:EDIT_PORT) {
+  SetText $edit "IpBox" "127.0.0.1"
+  SetText $edit "PortBox" $env:EDIT_PORT
+  Start-Sleep -Milliseconds 200
+  ClickButton $edit "确定"
+  Start-Sleep -Milliseconds 800
+  (FirstCheckBox $main).GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+  Start-Sleep -Milliseconds 3000
+  Capture $main "main-after-edit"
+} else {
+  [Native]::PostMessage($edit, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+  Start-Sleep -Milliseconds 500
+  (FirstCheckBox $main).GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+  Start-Sleep -Milliseconds 500
+}
 
 ClickButton $main "查询记录"
 $q = WaitWindow "查询保存记录"

@@ -83,6 +83,21 @@ public partial class MainViewModel : ObservableObject
         AddLog($"新增设备 {def.Id} ({def.Ip}:{def.Port})");
     }
 
+    /// <summary>编辑前的检查：返回 null 表示可以编辑，否则为提示文字。</summary>
+    public string? CheckCanEdit(DeviceItemViewModel? d)
+    {
+        if (d is null) return "请先在设备列表中选中要编辑的设备。";
+        if (d.Enabled) return $"设备 {d.Id} 正在运行，编辑前请先取消该行的“启用”勾选。";
+        return null;
+    }
+
+    public void EditDevice(DeviceItemViewModel item, DeviceDefinition updated)
+    {
+        _manager.UpdateDevice(updated);
+        item.RefreshDefinition();
+        AddLog($"已修改设备 {item.Id} ({item.Ip}:{item.Port})");
+    }
+
     [RelayCommand(CanExecute = nameof(CanRemove))]
     private async Task RemoveDevice()
     {

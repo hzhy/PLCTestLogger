@@ -26,6 +26,34 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "新增设备失败", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
+    private void EditDevice_Click(object sender, RoutedEventArgs e) => EditSelectedDevice();
+
+    private void DeviceGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // 只响应双击数据行，双击表头或空白处不弹窗
+        if (e.OriginalSource is DependencyObject src && FindParent<System.Windows.Controls.DataGridRow>(src) is not null) EditSelectedDevice();
+    }
+
+    private void EditSelectedDevice()
+    {
+        var item = _vm.SelectedDevice;
+        if (_vm.CheckCanEdit(item) is { } why)
+        {
+            MessageBox.Show(this, why, "编辑设备", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var dlg = new AddDeviceWindow(item!.Definition) { Owner = this };
+        if (dlg.ShowDialog() != true || dlg.Result is null) return;
+        try { _vm.EditDevice(item, dlg.Result); }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "编辑设备失败", MessageBoxButton.OK, MessageBoxImage.Warning); }
+    }
+
+    private static T? FindParent<T>(DependencyObject d) where T : DependencyObject
+    {
+        while (d is not null and not T) d = System.Windows.Media.VisualTreeHelper.GetParent(d);
+        return d as T;
+    }
+
     private void Search_Click(object sender, RoutedEventArgs e)
     {
         var win = new SearchWindow(new SearchViewModel(_manager.Store, _manager.Devices.Select(d => d.Id)))

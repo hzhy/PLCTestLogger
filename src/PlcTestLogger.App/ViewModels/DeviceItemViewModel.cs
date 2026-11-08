@@ -22,6 +22,9 @@ public partial class DeviceItemViewModel : ObservableObject
     public string Ip => Definition.Ip;
     public int Port => Definition.Port;
 
+    /// <summary>Definition 被编辑后刷新列表显示。</summary>
+    public void RefreshDefinition() { OnPropertyChanged(nameof(Ip)); OnPropertyChanged(nameof(Port)); }
+
     [ObservableProperty] private ConnectionState _state = ConnectionState.Disconnected;
     [ObservableProperty] private string _lastSavedAt = "";
     [ObservableProperty] private int _savedCount;

@@ -72,6 +72,19 @@ public sealed class DeviceManager
         AppLog.Info($"新增设备 {d.Id} {d.Ip}:{d.Port}");
     }
 
+    /// <summary>修改已有设备的连接参数。设备编号不可变，且设备必须处于停用状态。</summary>
+    public void UpdateDevice(DeviceDefinition updated)
+    {
+        var d = _devices.Devices.FirstOrDefault(x => x.Id == updated.Id) ?? throw new ArgumentException($"设备 {updated.Id} 不存在");
+        if (d.Enabled || _pollers.ContainsKey(d.Id)) throw new InvalidOperationException($"设备 {d.Id} 正在运行，编辑前请先停用");
+        if (ConfigLoader.ValidateDevice(updated) is { } err) throw new ArgumentException(err);
+        var backup = new DeviceDefinition { Id = d.Id, Ip = d.Ip, Port = d.Port, UnitId = d.UnitId, PollIntervalMs = d.PollIntervalMs, Enabled = d.Enabled };
+        d.Ip = updated.Ip; d.Port = updated.Port; d.UnitId = updated.UnitId; d.PollIntervalMs = updated.PollIntervalMs;
+        try { ConfigLoader.SaveDevices(AppPaths.DevicesConfig, _devices); }
+        catch { d.Ip = backup.Ip; d.Port = backup.Port; d.UnitId = backup.UnitId; d.PollIntervalMs = backup.PollIntervalMs; throw; }
+        AppLog.Info($"编辑设备 {d.Id} -> {d.Ip}:{d.Port} 站号 {d.UnitId} 周期 {d.PollIntervalMs}ms");
+    }
+
     public async Task RemoveDeviceAsync(string id)
     {
         if (_pollers.Remove(id, out var p)) await p.StopAsync();

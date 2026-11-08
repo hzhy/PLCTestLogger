@@ -26,6 +26,7 @@
         <ToolBarTray DockPanel.Dock="Top">
             <ToolBar>
                 <Button Content="新增设备" Click="AddDevice_Click" Padding="8,4"/>
+                <Button Content="编辑设备" Click="EditDevice_Click" Padding="8,4" ToolTip="修改选中设备的 IP、端口等（需先停用；设备编号不可改）"/>
                 <Button Content="删除设备" Command="{Binding RemoveDeviceCommand}" Padding="8,4"/>
                 <Separator/>
                 <Button Content="查询记录" Click="Search_Click" Padding="8,4"/>
@@ -52,7 +53,8 @@
                 <GroupBox Header="设备列表" Grid.Column="0">
                     <DataGrid ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}"
                               AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                              SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                              SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                              MouseDoubleClick="DeviceGrid_MouseDoubleClick">
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Header="启用" Width="50">
                                 <DataGridTemplateColumn.CellTemplate>

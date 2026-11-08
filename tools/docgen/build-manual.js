@@ -21,7 +21,7 @@ const excelTables = {
   "excel-dev01.png": { json: "dev01.json", title: "表 1  设备 DEV01 的 logger\\DEV01\\2026-11.xlsx" },
   "excel-dev02.png": { json: "dev02.json", title: "表 2  设备 DEV02 的 logger\\DEV02\\2026-11.xlsx" },
 };
-const imageWidthsIn = { "main.png": 6.3, "add-device.png": 3.2, "search.png": 6.3, "logo.png": 0.9 };
+const imageWidthsIn = { "main.png": 6.3, "add-device.png": 3.2, "edit-device.png": 3.2, "edit-device-blocked.png": 3.2, "search.png": 6.3, "logo.png": 0.9 };
 
 // ---------- inline markdown (**bold**, `code`) ----------
 function inline(text, extra = {}) {
@@ -115,6 +115,8 @@ function flushSection(landscape) { if (cur.children.length) sections.push(cur); 
 
 let i = 0;
 let titleSeen = false;
+// 编号列表实例全局递增：同一 instance 在不同节里会共用 numId 而继续编号
+let listInstance = 0, lastWasNotList = true;
 while (i < md.length) {
   const line = md[i];
   if (line.startsWith("# ")) {
@@ -125,11 +127,12 @@ while (i < md.length) {
     }
     i++; continue;
   }
-  if (line.startsWith("## ")) { cur.children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: line.slice(3), font: FONT })] })); i++; continue; }
+  if (line.startsWith("## ")) { lastWasNotList = true; cur.children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: line.slice(3), font: FONT })] })); i++; continue; }
   if (line.startsWith("```")) {
     const buf = []; i++;
     while (i < md.length && !md[i].startsWith("```")) buf.push(md[i++]);
     i++;
+    lastWasNotList = true;
     cur.children.push(...codeBlock(buf));
     cur.children.push(new Paragraph({ spacing: { after: 60 } }));
     continue;
@@ -137,6 +140,7 @@ while (i < md.length) {
   if (line.startsWith("|")) {
     const buf = [];
     while (i < md.length && md[i].startsWith("|")) buf.push(md[i++]);
+    lastWasNotList = true;
     cur.children.push(mdTable(buf, cur.landscape ? LAND_CONTENT_W : CONTENT_W));
     cur.children.push(new Paragraph({ spacing: { after: 60 } }));
     continue;
@@ -164,12 +168,13 @@ while (i < md.length) {
   const num = line.match(/^(\d+)\. (.*)/);
   if (num) {
     // 每个编号列表用独立实例，从 1 重新计数
-    if (!cur.listInstance || cur.lastWasNotList) { cur.listInstance = (cur.listInstance || 0) + 1; cur.lastWasNotList = false; }
-    cur.children.push(new Paragraph({ children: inline(num[2]), numbering: { reference: "numbers", level: 0, instance: cur.listInstance }, spacing: { after: 60 } }));
+    if (lastWasNotList) { listInstance++; lastWasNotList = false; }
+    cur.children.push(new Paragraph({ children: inline(num[2]), numbering: { reference: "numbers", level: 0, instance: listInstance }, spacing: { after: 60 } }));
     i++; continue;
   }
-  cur.lastWasNotList = true;
+  // 空行和图片不打断编号列表（列表项之间可以插图）；正文段落、表格、代码块、标题才结束列表
   if (line.trim() === "") { i++; continue; }
+  lastWasNotList = true;
   if (/^版本：/.test(line)) { cur.children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: inline(line, { color: "555555" }), spacing: { after: 240 } })); i++; continue; }
   cur.children.push(para(line));
   i++;
