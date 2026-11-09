@@ -33,8 +33,12 @@ public sealed class SnapshotFormatter
     public string FormatRegister(int address, ushort[] snapshot) => Cell(address, snapshot).Text;
 
     /// <summary>读取寄存器定义对应的数值（已按 dataType / 字序解码，未乘倍率）。</summary>
-    public double ReadValue(RegisterDefinition def, ushort[] snapshot)
+    public double ReadValue(RegisterDefinition def, ushort[] snapshot) => ReadValue(def, snapshot, out _);
+
+    /// <summary>同 ReadValue；isFloat 指出该值是否为浮点数（float32，或 auto32 判定为浮点）。</summary>
+    public double ReadValue(RegisterDefinition def, ushort[] snapshot, out bool isFloat)
     {
+        isFloat = false;
         var w0 = Word(def.Address, snapshot);
         if (def.Width == 1)
             return def.EffectiveDataType == "int16" ? (short)w0 : w0;
@@ -43,12 +47,25 @@ public sealed class SnapshotFormatter
         var lowFirst = (def.WordOrder ?? _cfg.WordOrder) != "highLow";
         var (low, high) = lowFirst ? (w0, w1) : (w1, w0);
         var bits = ((uint)high << 16) | low;
-        return def.EffectiveDataType switch
+        switch (def.EffectiveDataType)
         {
-            "int32" => (int)bits,
-            "float32" => BitConverter.Int32BitsToSingle((int)bits),
-            _ => bits,
-        };
+            case "int32": return (int)bits;
+            case "float32": isFloat = true; return BitConverter.Int32BitsToSingle((int)bits);
+            case "auto32":
+                var f = BitConverter.Int32BitsToSingle((int)bits);
+                if (LooksLikeFloat(f)) { isFloat = true; return f; }
+                return (int)bits;
+            default: return bits;
+        }
+    }
+
+    /// <summary>auto32 的判定：浮点解释在 0.001 ~ 1e9 之间视为浮点数；0、NaN、无穷、极小值（整数的位模式）视为整数。</summary>
+    public const double AutoFloatMin = 1e-3, AutoFloatMax = 1e9;
+    private static bool LooksLikeFloat(float f)
+    {
+        if (!float.IsFinite(f) || f == 0) return false;
+        var a = Math.Abs(f);
+        return a >= AutoFloatMin && a < AutoFloatMax;
     }
 
     private ushort Word(int address, ushort[] snapshot)
@@ -73,11 +90,11 @@ public sealed class SnapshotFormatter
         var raw = def.Width == 1
             ? Word(def.Address, snapshot).ToString(CultureInfo.InvariantCulture)
             : $"0x{Word(def.Address, snapshot):X4} 0x{Word(def.Address + 1, snapshot):X4}";
-        var value = ReadValue(def, snapshot);
+        var value = ReadValue(def, snapshot, out var isFloat);
         string text;
         if (def.IsEnum)
         {
-            var key = ((long)value).ToString(CultureInfo.InvariantCulture);
+            var key = ((long)Math.Round(value)).ToString(CultureInfo.InvariantCulture);
             text = def.Options is not null && def.Options.TryGetValue(key, out var label) ? label : $"K{key}";
         }
         else if (def.IsNumber)
@@ -92,11 +109,13 @@ public sealed class SnapshotFormatter
                 if (src.ResultScales is not null && src.ResultScales.TryGetValue(srcKey, out var s)) scale = s;
                 if (src.ResultDecimals is not null && src.ResultDecimals.TryGetValue(srcKey, out var d)) decimals = d;
             }
-            text = (value * scale).ToString("F" + Math.Max(0, decimals), CultureInfo.InvariantCulture) + unit;
+            // auto32 判定为浮点时，PLC 已直接给出工程值，不再乘倍率
+            var scaled = def.IsAuto32 && isFloat ? value : value * scale;
+            text = scaled.ToString("F" + Math.Max(0, decimals), CultureInfo.InvariantCulture) + unit;
         }
         else
         {
-            text = def.EffectiveDataType == "float32"
+            text = isFloat
                 ? value.ToString("R", CultureInfo.InvariantCulture)
                 : ((long)value).ToString(CultureInfo.InvariantCulture);
         }

@@ -1,11 +1,11 @@
 {
-  "_comment": "寄存器含义配置。type: enum=常量选项(options: 数值->语义), number=数值(×scale, 保留decimals位, 附unit; unitFrom 指定单位/倍率由另一寄存器的选项决定), raw=原始整数。dataType: uint16(默认)/int16/uint32/int32/float32，32位类型占本地址和下一地址两个寄存器(如 D212+D213)，后一个地址不要再定义。wordOrder: 32位字序，lowHigh=低字在前(汇川默认)/highLow=高字在前，可在单个寄存器上覆盖。enabled=false 表示备用/未使用，不在界面显示、不能作为 Excel 列，读取不受影响。triggerRegister 为“测试完成可保存”的标志寄存器，由0变1时触发保存。",
+  "_comment": "寄存器含义配置。type: enum=常量选项(options: 数值->语义), number=数值(×scale, 保留decimals位, 附unit; unitFrom 指定单位/倍率由另一寄存器的选项决定), raw=原始整数。dataType: uint16(默认)/int16/uint32/int32/float32/auto32，32位类型占本地址和下一地址两个寄存器(如 D212+D213)，后一个地址不要再定义；auto32=32位、按内容自动判断整数还是浮点数(浮点解释在 0.001~1e9 之间视为浮点，否则视为整数)，判定为浮点时不再乘 scale。wordOrder: 32位字序，highLow=高字在前(本项目 PLC 设定)/lowHigh=低字在前，可在单个寄存器上覆盖。enabled=false 表示备用/未使用，不在界面显示、不能作为 Excel 列，读取不受影响。triggerRegister 为“测试完成可保存”的标志寄存器，由0变1时触发保存。",
   "dRegisterBase": 0,
   "startRegister": 200,
-  "count": 31,
-  "triggerRegister": 230,
+  "count": 41,
+  "triggerRegister": 240,
   "resetTriggerAfterSave": false,
-  "wordOrder": "lowHigh",
+  "wordOrder": "highLow",
   "registers": [
     {
       "address": 200,
@@ -89,6 +89,7 @@
       "address": 204,
       "name": "测试方法",
       "type": "enum",
+      "dataType": "auto32",
       "options": {
         "1": "压力20PsiG",
         "2": "压力14.5PsiG",
@@ -146,12 +147,6 @@
       }
     },
     {
-      "address": 205,
-      "name": "备用",
-      "type": "raw",
-      "enabled": false
-    },
-    {
       "address": 206,
       "name": "测试方法类型2(备用)",
       "type": "raw",
@@ -173,7 +168,7 @@
     },
     {
       "address": 209,
-      "name": "纯水",
+      "name": "纯水流量",
       "type": "enum",
       "options": {
         "0": "无纯水要求",
@@ -196,143 +191,146 @@
     },
     {
       "address": 211,
-      "name": "报警",
-      "type": "raw"
+      "name": "扭矩",
+      "type": "number",
+      "scale": 1,
+      "decimals": 0,
+      "unit": ""
     },
     {
       "address": 212,
       "name": "接口1测试结果",
       "type": "number",
-      "scale": 0.01,
-      "decimals": 2,
-      "unitFrom": 204
-    },
-    {
-      "address": 213,
-      "name": "接口2测试结果",
-      "type": "number",
+      "dataType": "auto32",
       "scale": 0.01,
       "decimals": 2,
       "unitFrom": 204
     },
     {
       "address": 214,
-      "name": "接口3测试结果",
+      "name": "接口2测试结果",
       "type": "number",
-      "scale": 0.01,
-      "decimals": 2,
-      "unitFrom": 204
-    },
-    {
-      "address": 215,
-      "name": "接口4测试结果",
-      "type": "number",
+      "dataType": "auto32",
       "scale": 0.01,
       "decimals": 2,
       "unitFrom": 204
     },
     {
       "address": 216,
-      "name": "接口5测试结果",
+      "name": "接口3测试结果",
       "type": "number",
-      "scale": 0.01,
-      "decimals": 2,
-      "unitFrom": 204
-    },
-    {
-      "address": 217,
-      "name": "接口6测试结果",
-      "type": "number",
+      "dataType": "auto32",
       "scale": 0.01,
       "decimals": 2,
       "unitFrom": 204
     },
     {
       "address": 218,
-      "name": "接口7测试结果",
+      "name": "接口4测试结果",
       "type": "number",
-      "scale": 0.01,
-      "decimals": 2,
-      "unitFrom": 204
-    },
-    {
-      "address": 219,
-      "name": "接口8测试结果",
-      "type": "number",
+      "dataType": "auto32",
       "scale": 0.01,
       "decimals": 2,
       "unitFrom": 204
     },
     {
       "address": 220,
-      "name": "接口9测试结果",
+      "name": "接口5测试结果",
       "type": "number",
-      "scale": 0.01,
-      "decimals": 2,
-      "unitFrom": 204
-    },
-    {
-      "address": 221,
-      "name": "接口10测试结果",
-      "type": "number",
+      "dataType": "auto32",
       "scale": 0.01,
       "decimals": 2,
       "unitFrom": 204
     },
     {
       "address": 222,
-      "name": "接口11测试结果",
+      "name": "接口6测试结果",
       "type": "number",
-      "scale": 0.01,
-      "decimals": 2,
-      "unitFrom": 204
-    },
-    {
-      "address": 223,
-      "name": "接口12测试结果",
-      "type": "number",
+      "dataType": "auto32",
       "scale": 0.01,
       "decimals": 2,
       "unitFrom": 204
     },
     {
       "address": 224,
-      "name": "备用",
-      "type": "raw",
-      "enabled": false
-    },
-    {
-      "address": 225,
-      "name": "备用",
-      "type": "raw",
-      "enabled": false
+      "name": "接口7测试结果",
+      "type": "number",
+      "dataType": "auto32",
+      "scale": 0.01,
+      "decimals": 2,
+      "unitFrom": 204
     },
     {
       "address": 226,
-      "name": "备用",
-      "type": "raw",
-      "enabled": false
-    },
-    {
-      "address": 227,
-      "name": "备用",
-      "type": "raw",
-      "enabled": false
+      "name": "接口8测试结果",
+      "type": "number",
+      "dataType": "auto32",
+      "scale": 0.01,
+      "decimals": 2,
+      "unitFrom": 204
     },
     {
       "address": 228,
-      "name": "备用",
-      "type": "raw",
-      "enabled": false
-    },
-    {
-      "address": 229,
-      "name": "备用",
-      "type": "raw",
-      "enabled": false
+      "name": "接口9测试结果",
+      "type": "number",
+      "dataType": "auto32",
+      "scale": 0.01,
+      "decimals": 2,
+      "unitFrom": 204
     },
     {
       "address": 230,
+      "name": "接口10测试结果",
+      "type": "number",
+      "dataType": "auto32",
+      "scale": 0.01,
+      "decimals": 2,
+      "unitFrom": 204
+    },
+    {
+      "address": 232,
+      "name": "接口11测试结果",
+      "type": "number",
+      "dataType": "auto32",
+      "scale": 0.01,
+      "decimals": 2,
+      "unitFrom": 204
+    },
+    {
+      "address": 234,
+      "name": "接口12测试结果",
+      "type": "number",
+      "dataType": "auto32",
+      "scale": 0.01,
+      "decimals": 2,
+      "unitFrom": 204
+    },
+    {
+      "address": 236,
+      "name": "备用",
+      "type": "raw",
+      "enabled": false
+    },
+    {
+      "address": 237,
+      "name": "备用",
+      "type": "raw",
+      "enabled": false
+    },
+    {
+      "address": 238,
+      "name": "备用",
+      "type": "raw",
+      "enabled": false
+    },
+    {
+      "address": 239,
+      "name": "备用",
+      "type": "raw",
+      "enabled": false
+    },
+    {
+      "address": 240,
       "name": "测试完成标志",
       "type": "raw"
     }
@@ -344,18 +342,19 @@
     204,
     208,
     210,
+    211,
     209,
     212,
-    213,
     214,
-    215,
     216,
-    217,
     218,
-    219,
     220,
-    221,
     222,
-    223
+    224,
+    226,
+    228,
+    230,
+    232,
+    234
   ]
 }

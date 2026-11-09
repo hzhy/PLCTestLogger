@@ -89,7 +89,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="寄存器" Binding="{Binding Register}" Width="65"/>
                             <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="130"/>
-                            <DataGridTextColumn Header="原始值" Binding="{Binding Raw}" Width="95"/>
+                            <DataGridTextColumn Header="原始值" Binding="{Binding Raw}" Width="115"/>
                             <DataGridTextColumn Header="内容" Binding="{Binding Text}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>

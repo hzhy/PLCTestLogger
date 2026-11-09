@@ -7,18 +7,26 @@
 import socket, struct, sys, threading, time
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5020
-SCRIPT = sys.argv[2] if len(sys.argv) > 2 else "3:230=1;6:230=0;9:200=17,204=11,212=2,230=1;12:230=0"
+SCRIPT = sys.argv[2] if len(sys.argv) > 2 else "3:240=1;6:240=0;9:200=17,205=11,213=2,240=1;12:240=0"
 DURATION = float(sys.argv[3]) if len(sys.argv) > 3 else 20
 INIT = sys.argv[4] if len(sys.argv) > 4 else ""
 REGS = [0] * 1000
-# 初始值：JC003干湿式, 4H运转后试验, 12接口, 压力20, 200rpm, 温度36.5, 纯水100~200, 结果 0.01..
-init = {200: 23, 202: 5, 203: 12, 204: 1, 208: 200, 210: 365, 209: 4}
-for i in range(12): init[212 + i] = 1
-init[219] = 2
+# 初始值（D200~D240 布局，32 位高字在前）：JC003干湿式, 4H运转后试验, 12接口, 测试方法 1(压力20),
+# 200rpm, 温度36.5, 纯水100~200, 扭矩 12, 接口结果为浮点 20.5 (0x41A40000)
+init = {200: 23, 202: 5, 203: 12, 204: 0, 205: 1, 208: 200, 210: 365, 209: 4, 211: 12}
+for i in range(12): init[212 + 2 * i] = 0x41A4; init[213 + 2 * i] = 0
+init[226] = 0x41A8  # 接口8 = 21.0
 REGS[:] = [0] * 1000
 for k, v in init.items(): REGS[k] = v
+def assign(addr, text):
+    """值可写 "f20.5"：按 IEEE754 单精度、高字在前写入 addr 和 addr+1。"""
+    if text.startswith("f"):
+        bits = struct.unpack(">I", struct.pack(">f", float(text[1:])))[0]
+        REGS[addr], REGS[addr + 1] = bits >> 16, bits & 0xFFFF
+    else:
+        REGS[addr] = int(text)
 for a in filter(None, INIT.split(",")):
-    k, v = a.split("="); REGS[int(k)] = int(v)
+    k, v = a.split("="); assign(int(k), v)
 LOCK = threading.Lock()
 
 
@@ -53,11 +61,11 @@ def scripted():
     steps = []
     for part in SCRIPT.split(";"):
         at, assigns = part.split(":")
-        steps.append((float(at), [tuple(map(int, a.split("="))) for a in assigns.split(",")]))
+        steps.append((float(at), [(int(a.split("=")[0]), a.split("=")[1]) for a in assigns.split(",")]))
     for at, assigns in sorted(steps):
         time.sleep(max(0, t0 + at - time.time()))
         with LOCK:
-            for addr, val in assigns: REGS[addr] = val
+            for addr, val in assigns: assign(addr, val)
         print(f"[sim] t={at:.0f}s set {assigns}", flush=True)
 
 

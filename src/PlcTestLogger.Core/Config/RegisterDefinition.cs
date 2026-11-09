@@ -42,8 +42,9 @@ public sealed class RegisterDefinition
     public bool Signed { get; set; }
 
     /// <summary>
-    /// 数据类型：uint16（默认）、int16、uint32、int32、float32。
+    /// 数据类型：uint16（默认）、int16、uint32、int32、float32、auto32。
     /// 32 位类型占用本地址及下一地址两个寄存器（例如 D212+D213）。
+    /// auto32 = 32 位，按内容自动判断是整数还是 IEEE754 浮点数（PLC 里“常数或浮点数”的寄存器）。
     /// </summary>
     public string? DataType { get; set; }
 
@@ -57,9 +58,12 @@ public sealed class RegisterDefinition
     [JsonIgnore] public string EffectiveDataType => string.IsNullOrWhiteSpace(DataType) ? (Signed ? "int16" : "uint16") : DataType.Trim().ToLowerInvariant();
 
     /// <summary>占用的寄存器个数：16 位为 1，32 位为 2。</summary>
-    [JsonIgnore] public int Width => EffectiveDataType is "uint32" or "int32" or "float32" ? 2 : 1;
+    [JsonIgnore] public int Width => EffectiveDataType is "uint32" or "int32" or "float32" or "auto32" ? 2 : 1;
 
-    public static readonly string[] KnownDataTypes = { "uint16", "int16", "uint32", "int32", "float32" };
+    /// <summary>auto32：32 位数据按内容自动区分整数 / 浮点。</summary>
+    [JsonIgnore] public bool IsAuto32 => EffectiveDataType == "auto32";
+
+    public static readonly string[] KnownDataTypes = { "uint16", "int16", "uint32", "int32", "float32", "auto32" };
 
     [JsonIgnore] public bool IsEnum => string.Equals(Type, "enum", StringComparison.OrdinalIgnoreCase);
     [JsonIgnore] public bool IsNumber => string.Equals(Type, "number", StringComparison.OrdinalIgnoreCase);
