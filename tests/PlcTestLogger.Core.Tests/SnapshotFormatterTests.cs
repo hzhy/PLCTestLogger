@@ -23,7 +23,7 @@ public class SnapshotFormatterTests
     public void Enum_Hit_ReturnsLabel()
     {
         var f = new SnapshotFormatter(Cfg());
-        Assert.Equal("JX321干式", f.FormatRegister(200, Snapshot((200, 1))));
+        Assert.Equal("J0321干式", f.FormatRegister(200, Snapshot((200, 1))));
         Assert.Equal("12接口", f.FormatRegister(203, Snapshot((203, 12))));
     }
 

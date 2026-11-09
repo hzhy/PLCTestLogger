@@ -75,7 +75,7 @@ dotnet publish src/PlcTestLogger.App -c Release -r win-x64 --self-contained true
 | `address` | 全部 | D 编号 |
 | `name` | 全部 | 列名 / 显示名 |
 | `type` | 全部 | `enum` 常量选项；`number` 数值；`raw` 原始整数 |
-| `options` | enum | `{"寄存器值": "语义文本"}`，例如 `"1": "JX321干式"`。未匹配的值输出 `K<值>` |
+| `options` | enum | `{"寄存器值": "语义文本"}`，例如 `"1": "J0321干式"`。未匹配的值输出 `K<值>` |
 | `scale` / `decimals` / `unit` | number | 显示值 = 原始值 × scale，保留 decimals 位小数，附单位 |
 | `unitFrom` | number | 单位 / 倍率 / 小数位由另一寄存器（enum）的当前选项决定，例如接口测试结果随“测试方法”切换 PsiG 或 ml/min |
 | `resultUnits` / `resultScales` / `resultDecimals` | enum | 配合 `unitFrom`：本寄存器取某选项时，引用它的结果列使用的单位 / 倍率 / 小数位 |

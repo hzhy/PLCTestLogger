@@ -17,7 +17,7 @@ public class ConfigLoaderTests
         Assert.Equal("highLow", cfg.WordOrder);
         var product = cfg.Find(200)!;
         Assert.True(product.IsEnum);
-        Assert.Equal("JX321干式", product.Options!["1"]);
+        Assert.Equal("J0321干式", product.Options!["1"]);
         Assert.Equal(20, cfg.ExcelColumns.Count);
         Assert.Equal(204, cfg.Find(212)!.UnitFrom);
         Assert.Equal("auto32", cfg.Find(212)!.EffectiveDataType);
