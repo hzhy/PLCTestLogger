@@ -17,11 +17,14 @@ public static class ConfigLoader
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static RegisterConfig LoadRegisters(string path)
+    public static RegisterConfig LoadRegisters(string path) => ParseRegisters(File.ReadAllText(path), path);
+
+    /// <summary>解析并校验寄存器定义 JSON；source 只用于错误提示（文件路径或“内置”）。</summary>
+    public static RegisterConfig ParseRegisters(string json, string source)
     {
-        var cfg = JsonSerializer.Deserialize<RegisterConfig>(File.ReadAllText(path), Options)
-                  ?? throw new InvalidDataException($"配置文件为空: {path}");
-        Validate(cfg, path);
+        var cfg = JsonSerializer.Deserialize<RegisterConfig>(json, Options)
+                  ?? throw new InvalidDataException($"寄存器定义为空: {source}");
+        Validate(cfg, source);
         return cfg;
     }
 

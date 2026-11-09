@@ -1,0 +1,372 @@
+﻿namespace PlcTestLogger.Core.Config;
+
+/// <summary>
+/// 内置寄存器定义（随程序编译）。修改后重新编译发布即生效；
+/// 现场如需临时覆盖，把同样格式的 JSON 放到 exe 旁的 config\registers.json，程序会优先加载它。
+/// 格式说明见 JSON 里的 _comment。
+/// </summary>
+public static class RegisterMap
+{
+    public const string Json = """
+        {
+          "_comment": "寄存器含义配置。type: enum=常量选项(options: 数值->语义), number=数值(×scale, 保留decimals位, 附unit; unitFrom 指定单位/倍率由另一寄存器的选项决定), raw=原始整数。dataType: uint16(默认)/int16/uint32/int32/float32/auto32，32位类型占本地址和下一地址两个寄存器(如 D212+D213)，后一个地址不要再定义；auto32=32位、按内容自动判断整数还是浮点数(浮点解释在 0.001~1e9 之间视为浮点，否则视为整数)，判定为浮点时不再乘 scale。wordOrder: 32位字序，highLow=高字在前(本项目 PLC 设定)/lowHigh=低字在前，可在单个寄存器上覆盖。enabled=false 表示备用/未使用，不在界面显示、不能作为 Excel 列，读取不受影响。triggerRegister 为“测试完成可保存”的标志寄存器，由0变1时触发保存。",
+          "dRegisterBase": 0,
+          "startRegister": 200,
+          "count": 41,
+          "triggerRegister": 240,
+          "resetTriggerAfterSave": false,
+          "wordOrder": "highLow",
+          "registers": [
+            {
+              "address": 200,
+              "name": "产品编号",
+              "type": "enum",
+              "options": {
+                "1": "J0321干式",
+                "2": "J0362干湿式",
+                "3": "J0346湿式",
+                "4": "J0359干式",
+                "5": "J0363湿式",
+                "6": "J0360湿式",
+                "7": "J0373湿式",
+                "8": "J0376干式",
+                "9": "J0378湿式",
+                "10": "J0383干式",
+                "11": "J0318干式",
+                "12": "J0385湿式",
+                "13": "J0395干式",
+                "14": "J0388干式",
+                "15": "J0399湿式",
+                "16": "J0400干式",
+                "17": "J0405湿式",
+                "18": "J0387湿式",
+                "19": "J0396干湿式",
+                "20": "J0406干式",
+                "21": "JC005干湿式",
+                "22": "JC007湿式",
+                "23": "JC003干湿式",
+                "24": "JC004湿式",
+                "25": "JC012湿式",
+                "26": "备用26",
+                "27": "备用27",
+                "28": "备用28",
+                "29": "备用29",
+                "30": "备用30",
+                "31": "备用31",
+                "32": "备用32",
+                "33": "备用33",
+                "34": "备用34"
+              }
+            },
+            {
+              "address": 201,
+              "name": "备用",
+              "type": "raw",
+              "enabled": false
+            },
+            {
+              "address": 202,
+              "name": "测试方式",
+              "type": "enum",
+              "options": {
+                "1": "静止试验",
+                "2": "30S运转",
+                "3": "4H运转",
+                "4": "4H运转中试验",
+                "5": "4H运转后试验"
+              }
+            },
+            {
+              "address": 203,
+              "name": "接口数量",
+              "type": "enum",
+              "options": {
+                "1": "1接口",
+                "2": "2接口",
+                "3": "3接口",
+                "4": "4接口",
+                "5": "5接口",
+                "6": "6接口",
+                "7": "7接口",
+                "8": "8接口",
+                "9": "9接口",
+                "10": "10接口",
+                "11": "11接口",
+                "12": "12接口"
+              }
+            },
+            {
+              "address": 204,
+              "name": "测试方法",
+              "type": "enum",
+              "dataType": "auto32",
+              "options": {
+                "1": "压力20PsiG",
+                "2": "压力14.5PsiG",
+                "3": "压力3PsiG",
+                "4": "负压-6PsiG",
+                "5": "编号5备用",
+                "6": "编号6备用",
+                "7": "编号7备用",
+                "8": "编号8备用",
+                "9": "编号9备用",
+                "10": "编号10备用",
+                "11": "流量0.4/2.0ml",
+                "12": "流量0.4/1.0ml",
+                "13": "流量0.4/0.7ml",
+                "14": "流量0.4/0.6ml",
+                "15": "流量0.05/0.6ml",
+                "16": "编号16备用",
+                "17": "编号17备用",
+                "18": "编号18备用",
+                "19": "编号19备用",
+                "20": "编号20备用"
+              },
+              "resultUnits": {
+                "1": "PsiG",
+                "2": "PsiG",
+                "3": "PsiG",
+                "4": "PsiG",
+                "11": "ml/min",
+                "12": "ml/min",
+                "13": "ml/min",
+                "14": "ml/min",
+                "15": "ml/min"
+              },
+              "resultScales": {
+                "1": 0.01,
+                "2": 0.01,
+                "3": 0.01,
+                "4": 0.01,
+                "11": 0.1,
+                "12": 0.1,
+                "13": 0.1,
+                "14": 0.1,
+                "15": 0.1
+              },
+              "resultDecimals": {
+                "1": 2,
+                "2": 2,
+                "3": 2,
+                "4": 2,
+                "11": 1,
+                "12": 1,
+                "13": 1,
+                "14": 1,
+                "15": 1
+              }
+            },
+            {
+              "address": 206,
+              "name": "测试方法类型2(备用)",
+              "type": "raw",
+              "enabled": false
+            },
+            {
+              "address": 207,
+              "name": "备用",
+              "type": "raw",
+              "enabled": false
+            },
+            {
+              "address": 208,
+              "name": "电机转速",
+              "type": "number",
+              "scale": 1,
+              "decimals": 0,
+              "unit": "rpm"
+            },
+            {
+              "address": 209,
+              "name": "纯水流量",
+              "type": "enum",
+              "options": {
+                "0": "无纯水要求",
+                "1": "80~100ml",
+                "2": "100~150ml",
+                "3": "150~200ml",
+                "4": "100~200ml",
+                "5": "200~250ml",
+                "6": "250~300ml",
+                "7": "200~300ml"
+              }
+            },
+            {
+              "address": 210,
+              "name": "温度",
+              "type": "number",
+              "scale": 0.1,
+              "decimals": 1,
+              "unit": "℃"
+            },
+            {
+              "address": 211,
+              "name": "扭矩",
+              "type": "number",
+              "scale": 1,
+              "decimals": 0,
+              "unit": ""
+            },
+            {
+              "address": 212,
+              "name": "接口1测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 214,
+              "name": "接口2测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 216,
+              "name": "接口3测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 218,
+              "name": "接口4测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 220,
+              "name": "接口5测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 222,
+              "name": "接口6测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 224,
+              "name": "接口7测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 226,
+              "name": "接口8测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 228,
+              "name": "接口9测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 230,
+              "name": "接口10测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 232,
+              "name": "接口11测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 234,
+              "name": "接口12测试结果",
+              "type": "number",
+              "dataType": "auto32",
+              "scale": 0.01,
+              "decimals": 2,
+              "unitFrom": 204
+            },
+            {
+              "address": 236,
+              "name": "备用",
+              "type": "raw",
+              "enabled": false
+            },
+            {
+              "address": 237,
+              "name": "备用",
+              "type": "raw",
+              "enabled": false
+            },
+            {
+              "address": 238,
+              "name": "备用",
+              "type": "raw",
+              "enabled": false
+            },
+            {
+              "address": 239,
+              "name": "备用",
+              "type": "raw",
+              "enabled": false
+            },
+            {
+              "address": 240,
+              "name": "测试完成标志",
+              "type": "raw"
+            }
+          ],
+          "excelColumns": [
+            200,
+            202,
+            203,
+            204,
+            208,
+            210,
+            211,
+            209,
+            212,
+            214,
+            216,
+            218,
+            220,
+            222,
+            224,
+            226,
+            228,
+            230,
+            232,
+            234
+          ]
+        }
+        """;
+}

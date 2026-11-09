@@ -26,10 +26,10 @@ static class Program
         var waitMs = 300;
         if (mode == "main")
         {
-            var registers = ConfigLoader.LoadRegisters(AppPaths.RegistersConfig);
+            var registers = RegisterConfigSource.Load();
             var devices = ConfigLoader.LoadDevices(AppPaths.DevicesConfig);
-            manager = new DeviceManager(registers, devices, new NModbusRegisterReaderFactory(), new ExcelLogStore(AppPaths.LoggerDir));
-            w = new MainWindow(manager);
+            manager = new DeviceManager(registers.Config, devices, new NModbusRegisterReaderFactory(), new ExcelLogStore(AppPaths.LoggerDir));
+            w = new MainWindow(manager, registers.Label);
             manager.StartAll();
             waitMs = args.Length > 2 ? int.Parse(args[2]) : 4000;
         }

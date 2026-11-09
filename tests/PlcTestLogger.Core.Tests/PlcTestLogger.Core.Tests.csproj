@@ -26,5 +26,6 @@
 
   <ItemGroup>
     <None Include="..\..\src\PlcTestLogger.App\config\*.json" Link="config\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\samples\config\registers.json" Link="samples\registers.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

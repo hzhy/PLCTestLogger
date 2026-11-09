@@ -10,12 +10,12 @@ public partial class MainWindow : Window
     private readonly DeviceManager _manager;
     private readonly MainViewModel _vm;
 
-    public MainWindow(DeviceManager manager)
+    public MainWindow(DeviceManager manager, string registerSourceLabel = RegisterConfigSource.BuiltInLabel)
     {
         InitializeComponent();
         Title = $"实验数据追溯系统 v{AppVersion}";
         _manager = manager;
-        _vm = new MainViewModel(manager);
+        _vm = new MainViewModel(manager) { RegisterSource = registerSourceLabel };
         DataContext = _vm;
     }
 

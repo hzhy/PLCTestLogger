@@ -8,8 +8,7 @@ public class SnapshotFormatterTests
 {
     private static RegisterConfig Cfg()
     {
-        var cfg = ConfigLoader.LoadRegisters(ConfigLoaderTests.SamplePath);
-        return cfg;
+        return ConfigLoaderTests.BuiltIn();
     }
 
     private static ushort[] Snapshot(params (int addr, ushort val)[] values)

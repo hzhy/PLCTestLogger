@@ -14,7 +14,7 @@
 ```
 PlcLogger.exe
 config/
-  registers.json      寄存器含义、常量选项、Excel 列顺序、触发寄存器
+  registers.json      可选的现场覆盖文件；寄存器定义默认编译在程序内（RegisterMap.cs）
   devices.json        设备列表（界面新增/编辑/删除/启停设备时自动写回）
 logger/
   <设备编号>/
@@ -54,7 +54,10 @@ dotnet publish src/PlcTestLogger.App -c Release -r win-x64 --self-contained true
 - `pollIntervalMs`：轮询周期（毫秒）。
 - `enabled`：是否启用（默认 true）。关闭后不轮询、不保存；界面设备列表第一列的开关对应此字段，切换后自动写回。
 
-### config/registers.json
+### 寄存器定义（RegisterMap.cs / config/registers.json）
+
+寄存器定义编译在程序内：`src/PlcTestLogger.Core/Config/RegisterMap.cs` 里的 `RegisterMap.Json` 原始字符串，修改后重新编译发布。
+exe 旁如果存在 `config/registers.json`，启动时优先加载它（现场临时覆盖），状态栏会显示来源。`samples/config/registers.json` 是内置定义的副本，单元测试会校验两者一致，改 RegisterMap.cs 时请同步更新它。JSON 字段如下：
 
 | 字段 | 说明 |
 |------|------|

@@ -5,12 +5,13 @@ namespace PlcTestLogger.Core.Tests;
 
 public class ConfigLoaderTests
 {
-    public static string SamplePath => Path.Combine(AppContext.BaseDirectory, "config", "registers.json");
+    /// <summary>内置寄存器定义（RegisterMap.Json）。</summary>
+    public static RegisterConfig BuiltIn() => ConfigLoader.ParseRegisters(RegisterMap.Json, "RegisterMap.Json");
 
     [Fact]
-    public void LoadRegisters_ParsesSampleFile()
+    public void BuiltInRegisterMap_ParsesAndValidates()
     {
-        var cfg = ConfigLoader.LoadRegisters(SamplePath);
+        var cfg = BuiltIn();
         Assert.Equal(200, cfg.StartRegister);
         Assert.Equal(41, cfg.Count);
         Assert.Equal(240, cfg.TriggerRegister);
@@ -23,6 +24,16 @@ public class ConfigLoaderTests
         Assert.Equal("auto32", cfg.Find(212)!.EffectiveDataType);
         Assert.Equal(2, cfg.Find(204)!.Width);
         Assert.Null(cfg.Find(213));
+    }
+
+    [Fact]
+    public void SampleOverrideFile_MatchesBuiltIn()
+    {
+        // samples/config/registers.json 是给现场覆盖用的模板，必须和内置定义保持一致
+        var path = Path.Combine(AppContext.BaseDirectory, "samples", "registers.json");
+        var file = System.Text.Json.JsonSerializer.Serialize(ConfigLoader.LoadRegisters(path));
+        var builtIn = System.Text.Json.JsonSerializer.Serialize(BuiltIn());
+        Assert.Equal(builtIn, file);
     }
 
     [Fact]
@@ -110,7 +121,7 @@ public class RegisterConfigValidationTests
     [Fact]
     public void SampleConfig_HasSparesDisabled()
     {
-        var cfg = ConfigLoader.LoadRegisters(ConfigLoaderTests.SamplePath);
+        var cfg = ConfigLoaderTests.BuiltIn();
         Assert.False(cfg.Find(201)!.Enabled);
         Assert.True(cfg.Find(200)!.Enabled);
     }

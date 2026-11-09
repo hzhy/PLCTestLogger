@@ -37,6 +37,8 @@
         </ToolBarTray>
         <StatusBar DockPanel.Dock="Bottom">
             <TextBlock Text="{Binding LoggerDir, StringFormat=记录目录：{0}}"/>
+            <Separator/>
+            <TextBlock Text="{Binding RegisterSource, StringFormat=寄存器定义：{0}}"/>
         </StatusBar>
         <Grid Margin="8">
             <Grid.RowDefinitions>

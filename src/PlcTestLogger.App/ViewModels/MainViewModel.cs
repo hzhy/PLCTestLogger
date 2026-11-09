@@ -51,6 +51,9 @@ public partial class MainViewModel : ObservableObject
     public string TriggerInfo => $"触发寄存器 D{_manager.Registers.TriggerRegister}（0→1 时保存）    读取范围 D{_manager.Registers.StartRegister}~D{_manager.Registers.StartRegister + _manager.Registers.Count - 1}";
     public string LoggerDir => _manager.Store.Root;
 
+    /// <summary>寄存器定义来源（内置 / config\registers.json），显示在状态栏。</summary>
+    public string RegisterSource { get; init; } = "";
+
     partial void OnSelectedDeviceChanged(DeviceItemViewModel? value)
     {
         ushort[]? snap = null;

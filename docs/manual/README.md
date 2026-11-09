@@ -18,8 +18,9 @@
 | 路径 | 作用 |
 | --- | --- |
 | PlcLogger.exe | 主程序 |
-| config\registers.json | 寄存器含义、常量选项、Excel 列顺序、触发寄存器 |
-| config\devices.json | 设备列表（界面新增/删除/启停设备时自动写回） |
+| config\devices.json | 设备列表（界面新增/编辑/删除/启停设备时自动写回） |
+| config\registers.json | 可选。寄存器定义已编译在程序内，平时不需要这个文件；只有现场需要临时覆盖时才放一份（见第 6 节） |
+| samples\config\registers.json | 内置寄存器定义的副本，作为覆盖文件的模板 |
 | logger\<设备编号>\2026-11.xlsx | 记录文件，一台设备一个文件夹，一个月一个文件 |
 | logger\<设备编号>\2026-11.pending.tsv | Excel 被占用时的暂存记录，关闭 Excel 后自动合并 |
 | logs\app-20261108.log | 程序运行日志，排查问题时查看 |
@@ -117,7 +118,11 @@
 
 ## 6. 配置文件
 
-两个配置文件都在 config 文件夹，用记事本或 VS Code 编辑，保存后重启程序生效（devices.json 也可在界面上改）。改完请确认 JSON 格式正确，否则程序启动时会提示错误并退出。
+设备列表存在 config\devices.json，可以在界面上改，也可以用记事本或 VS Code 编辑后重启程序生效。
+
+寄存器定义（含义、常量选项、倍率、Excel 列顺序、触发寄存器）**已编译在程序内部**，正常使用不需要任何配置文件；需要修改时由开发人员改源码中的 RegisterMap.cs 后重新编译发布。
+
+**现场临时覆盖**：如果 exe 旁的 config 文件夹里存在 registers.json，程序启动时会优先加载它而不用内置定义，主界面底部状态栏会显示“寄存器定义：…\config\registers.json”，否则显示“寄存器定义：内置（随程序编译）”。做法：把 samples\config\registers.json 复制到 config 文件夹，按下面的表修改，重启程序。不再需要覆盖时删掉该文件即可恢复内置定义。改完请确认 JSON 格式正确，否则程序启动时会提示错误并退出。
 
 **devices.json — 设备列表**
 
@@ -129,7 +134,7 @@
 }
 ```
 
-**registers.json — 寄存器含义**，常见修改：
+**registers.json（覆盖文件）— 寄存器含义**，常见修改（改源码 RegisterMap.cs 时同样适用）：
 
 | 要改什么 | 改哪里 |
 | --- | --- |
