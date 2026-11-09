@@ -13,9 +13,20 @@ public partial class MainWindow : Window
     public MainWindow(DeviceManager manager)
     {
         InitializeComponent();
+        Title = $"实验数据追溯系统 v{AppVersion}";
         _manager = manager;
         _vm = new MainViewModel(manager);
         DataContext = _vm;
+    }
+
+    /// <summary>来自 csproj 的 &lt;Version&gt;，窗口标题与用户手册共用同一版本号。</summary>
+    public static string AppVersion
+    {
+        get
+        {
+            var v = typeof(MainWindow).Assembly.GetName().Version;
+            return v is null ? "?" : $"{v.Major}.{v.Minor}.{v.Build}";
+        }
     }
 
     private void AddDevice_Click(object sender, RoutedEventArgs e)

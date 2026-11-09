@@ -15,6 +15,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AssemblyName>PlcLogger</AssemblyName>
+    <Version>1.0.1</Version>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Product>实验数据追溯系统</Product>
     <AssemblyTitle>实验数据追溯系统</AssemblyTitle>

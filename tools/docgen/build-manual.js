@@ -5,7 +5,7 @@ const path = require("path");
 const {
   Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType,
   HeadingLevel, AlignmentType, LevelFormat, ShadingType, BorderStyle, PageOrientation, PageNumber,
-  Footer, TableLayoutType,
+  Footer, Header, TableLayoutType, TabStopType, Tab,
 } = require("docx");
 
 const root = path.resolve(__dirname, "..", "..");
@@ -13,6 +13,9 @@ const mdPath = path.join(root, "docs", "manual", "README.md");
 const imgDir = path.join(root, "docs", "manual", "images");
 const outPath = path.join(root, "docs", "实验数据追溯系统-用户操作说明.docx");
 const FONT = "Microsoft YaHei";
+// 版本号以 csproj 的 <Version> 为准，与软件窗口标题一致
+const VERSION = (fs.readFileSync(path.join(root, "src", "PlcTestLogger.App", "PlcTestLogger.App.csproj"), "utf8").match(/<Version>([^<]+)<\/Version>/) || [, "0.0.0"])[1];
+const DOC_TITLE = "实验数据追溯系统 用户操作说明";
 const PAGE_W = 11906, PAGE_H = 16838, MARGIN = 1134; // A4, 2cm
 const CONTENT_W = PAGE_W - MARGIN * 2;
 const LAND_CONTENT_W = PAGE_H - MARGIN * 2;
@@ -124,6 +127,7 @@ while (i < md.length) {
       titleSeen = true;
       cur.children.push(imageParagraph("logo.png"));
       cur.children.push(new Paragraph({ heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, children: [new TextRun({ text: line.slice(2), font: FONT })] }));
+      cur.children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: "v" + VERSION, font: FONT, size: 28, bold: true, color: "1F3864" })] }));
     }
     i++; continue;
   }
@@ -175,7 +179,7 @@ while (i < md.length) {
   // 空行和图片不打断编号列表（列表项之间可以插图）；正文段落、表格、代码块、标题才结束列表
   if (line.trim() === "") { i++; continue; }
   lastWasNotList = true;
-  if (/^版本：/.test(line)) { cur.children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: inline(line, { color: "555555" }), spacing: { after: 240 } })); i++; continue; }
+  if (/^版本：/.test(line)) { cur.children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: inline(line.replace(/v[\d.]+/, "v" + VERSION), { color: "555555" }), spacing: { after: 240 } })); i++; continue; }
   cur.children.push(para(line));
   i++;
 }
@@ -189,11 +193,24 @@ function sectionProps(landscape) {
     },
   };
 }
+// 页眉（标题栏）：左侧文档名，右侧版本号
+function header(landscape) {
+  const w = landscape ? LAND_CONTENT_W : CONTENT_W;
+  return new Header({ children: [new Paragraph({
+    tabStops: [{ type: TabStopType.RIGHT, position: w }],
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "BBBBBB", space: 2 } },
+    spacing: { after: 120 },
+    children: [
+      new TextRun({ text: DOC_TITLE, font: FONT, size: 18, color: "777777" }),
+      new TextRun({ children: [new Tab(), "v" + VERSION], font: FONT, size: 18, color: "777777" }),
+    ],
+  })] });
+}
 const footer = new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ children: ["第 ", PageNumber.CURRENT, " 页"], font: FONT, size: 18, color: "777777" })] })] });
 
 const doc = new Document({
   creator: "PlcLogger",
-  title: "实验数据追溯系统 用户操作说明",
+  title: DOC_TITLE + " v" + VERSION,
   styles: {
     default: { document: { run: { font: FONT, size: 21 } } },
     paragraphStyles: [
@@ -207,7 +224,7 @@ const doc = new Document({
       { reference: "numbers", levels: [{ level: 0, format: LevelFormat.DECIMAL, text: "%1.", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 560, hanging: 280 } } } }] },
     ],
   },
-  sections: sections.map(s => ({ properties: sectionProps(s.landscape), footers: { default: footer }, children: s.children })),
+  sections: sections.map(s => ({ properties: sectionProps(s.landscape), headers: { default: header(s.landscape) }, footers: { default: footer }, children: s.children })),
 });
 
 Packer.toBuffer(doc).then(buf => {
