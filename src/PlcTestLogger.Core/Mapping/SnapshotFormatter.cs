@@ -32,6 +32,9 @@ public sealed class SnapshotFormatter
 
     public string FormatRegister(int address, ushort[] snapshot) => Cell(address, snapshot).Text;
 
+    /// <summary>单个寄存器的原始值与显示文字（与实时数据区、Excel 使用同一换算）。</summary>
+    public FormattedCell FormatCell(int address, ushort[] snapshot) => Cell(address, snapshot);
+
     /// <summary>读取寄存器定义对应的数值（已按 dataType / 字序解码，未乘倍率）。</summary>
     public double ReadValue(RegisterDefinition def, ushort[] snapshot) => ReadValue(def, snapshot, out _);
 

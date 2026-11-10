@@ -65,6 +65,9 @@ public partial class MainWindow : Window
         return d as T;
     }
 
+    private void DataTest_Click(object sender, RoutedEventArgs e)
+        => new DataTestWindow(new DataTestViewModel(_manager.Registers, AppPaths.TestCases)) { Owner = this }.Show();
+
     private void Search_Click(object sender, RoutedEventArgs e)
     {
         var win = new SearchWindow(new SearchViewModel(_manager.Store, _manager.Devices.Select(d => d.Id), _manager.Registers))

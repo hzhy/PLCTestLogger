@@ -1,0 +1,71 @@
+using PlcTestLogger.Core.Testing;
+using Xunit;
+
+namespace PlcTestLogger.Core.Tests;
+
+public class TestCaseRunnerTests
+{
+    private const string Json = """
+        {
+          "cases": [
+            {
+              "name": "ok",
+              "words": { "200": 1, "D205": "0x0001", "212": "0x41A4", "213": "0x0000", "210": 365 },
+              "expect": { "200": "J0321干式", "204": "压力20PsiG", "D212": "20.50PsiG", "210": "36.5℃" }
+            },
+            {
+              "name": "wrong",
+              "words": { "200": 37 },
+              "expect": { "200": "J0321干式", "240": 0 }
+            }
+          ]
+        }
+        """;
+
+    [Fact]
+    public void Parse_ReadsDecimalHexAndDPrefix()
+    {
+        var cases = TestCaseRunner.Parse(Json);
+        Assert.Equal(2, cases.Count);
+        Assert.Equal((ushort)0x41A4, cases[0].Words[212]);
+        Assert.Equal((ushort)1, cases[0].Words[205]);
+        Assert.Equal("20.50PsiG", cases[0].Expect[212]);
+        Assert.Equal("0", cases[1].Expect[240]);
+    }
+
+    [Fact]
+    public void Run_ReportsPassAndFailWithActualText()
+    {
+        var results = TestCaseRunner.Run(TestCaseRunner.Parse(Json), ConfigLoaderTests.BuiltIn());
+        Assert.All(results.Where(r => r.Case == "ok"), r => Assert.True(r.Passed, $"{r.Register}: {r.Actual}"));
+        var bad = results.Single(r => r.Case == "wrong" && r.Register == "D200");
+        Assert.False(bad.Passed);
+        Assert.Equal("K37", bad.Actual);
+        Assert.Equal("失败", bad.ResultText);
+        Assert.True(results.Single(r => r.Case == "wrong" && r.Register == "D240").Passed);
+        Assert.Equal("0x41A4 0x0000", results.Single(r => r.Register == "D212").Raw);
+    }
+
+    [Fact]
+    public void Run_FlagsWordsOutsideRange_AndUndefinedExpectAddress()
+    {
+        var cases = TestCaseRunner.Parse("""
+            { "cases": [
+              { "name": "range", "words": { "199": 1 }, "expect": { "200": "x" } },
+              { "name": "second-word", "words": {}, "expect": { "213": "0" } }
+            ] }
+            """);
+        var results = TestCaseRunner.Run(cases, ConfigLoaderTests.BuiltIn());
+        Assert.Contains("D199", results.Single(r => r.Case == "range").Actual);
+        Assert.False(results.Single(r => r.Case == "second-word").Passed);
+    }
+
+    [Theory]
+    [InlineData("""{ "cases": [ { "name": "a", "words": { "200": 70000 }, "expect": { "200": "x" } } ] }""")]
+    [InlineData("""{ "cases": [ { "name": "a", "words": { "200": "0xZZ" }, "expect": { "200": "x" } } ] }""")]
+    [InlineData("""{ "cases": [ { "name": "a", "words": { "abc": 1 }, "expect": { "200": "x" } } ] }""")]
+    [InlineData("""{ "cases": [ { "name": "a", "words": { "200": 1 } } ] }""")]
+    [InlineData("""{ "items": [] }""")]
+    public void Parse_RejectsBadInput(string json)
+        => Assert.Throws<InvalidDataException>(() => TestCaseRunner.Parse(json));
+}

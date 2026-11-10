@@ -34,6 +34,10 @@ static class Program
             manager.StartAll();
             waitMs = args.Length > 2 ? int.Parse(args[2]) : 4000;
         }
+        else if (mode == "datatest")
+        {
+            w = new DataTestWindow(new PlcTestLogger.App.ViewModels.DataTestViewModel(RegisterConfigSource.Load().Config, args[2])) { Height = 640 };
+        }
         else if (mode == "search")
         {
             var vm = new PlcTestLogger.App.ViewModels.SearchViewModel(new ExcelLogStore(args[2]), new[] { args[3] }, RegisterConfigSource.Load().Config)

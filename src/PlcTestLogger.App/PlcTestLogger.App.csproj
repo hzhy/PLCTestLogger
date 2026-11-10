@@ -23,5 +23,6 @@
 
   <ItemGroup>
     <None Include="config\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\samples\test\*.json" Link="samples\test\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

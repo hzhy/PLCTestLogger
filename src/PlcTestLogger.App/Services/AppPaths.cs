@@ -10,4 +10,6 @@ public static class AppPaths
     public static string DevicesConfig => Path.Combine(ConfigDir, "devices.json");
     public static string LoggerDir => Path.Combine(BaseDir, "logger");
     public static string LogsDir => Path.Combine(BaseDir, "logs");
+    /// <summary>数据测试的默认测试文件。</summary>
+    public static string TestCases => Path.Combine(BaseDir, "samples", "test", "test-cases.json");
 }

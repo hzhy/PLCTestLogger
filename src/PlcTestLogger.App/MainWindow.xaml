@@ -30,6 +30,7 @@
                 <Button Content="删除设备" Command="{Binding RemoveDeviceCommand}" Padding="8,4"/>
                 <Separator/>
                 <Button Content="查询记录" Click="Search_Click" Padding="8,4"/>
+                <Button Content="数据测试" Click="DataTest_Click" Padding="8,4" ToolTip="用测试文件中的 PLC 原始字检查换算和显示是否正确（不连接 PLC）"/>
                 <Button Content="打开记录文件夹" Command="{Binding OpenLoggerDirCommand}" Padding="8,4"/>
                 <Separator/>
                 <TextBlock Text="{Binding TriggerInfo}" VerticalAlignment="Center" Margin="8,0" Foreground="#555"/>
