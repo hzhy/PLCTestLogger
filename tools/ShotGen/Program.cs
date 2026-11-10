@@ -29,7 +29,7 @@ static class Program
             var registers = RegisterConfigSource.Load();
             var devices = ConfigLoader.LoadDevices(AppPaths.DevicesConfig);
             manager = new DeviceManager(registers.Config, devices, new NModbusRegisterReaderFactory(), new ExcelLogStore(AppPaths.LoggerDir));
-            w = new MainWindow(manager, registers.Label);
+            w = new MainWindow(manager);
             manager.StartAll();
             waitMs = args.Length > 2 ? int.Parse(args[2]) : 4000;
         }

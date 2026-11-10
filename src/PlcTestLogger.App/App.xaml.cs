@@ -40,7 +40,7 @@ public partial class App : Application
 
         AppLog.Info($"启动，设备 {devices.Devices.Count} 台，触发寄存器 D{registers.Config.TriggerRegister}，寄存器定义：{registers.Label}");
         _manager = new DeviceManager(registers.Config, devices, new NModbusRegisterReaderFactory(), new ExcelLogStore(AppPaths.LoggerDir));
-        var window = new MainWindow(_manager, registers.Label);
+        var window = new MainWindow(_manager);
         MainWindow = window;
         window.Show();
         _manager.StartAll();
