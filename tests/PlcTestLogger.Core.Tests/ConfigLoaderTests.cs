@@ -22,7 +22,7 @@ public class ConfigLoaderTests
         Assert.Equal(20, cfg.ExcelColumns.Count);
         Assert.Equal(204, cfg.Find(212)!.UnitFrom);
         Assert.Equal("auto32", cfg.Find(212)!.EffectiveDataType);
-        Assert.Equal(2, cfg.Find(204)!.Width);
+        Assert.Equal(1, cfg.Find(204)!.Width);
         Assert.Null(cfg.Find(213));
     }
 

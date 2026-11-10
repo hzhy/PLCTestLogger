@@ -23,7 +23,7 @@ public class SnapshotFormatterTests
     {
         var f = new SnapshotFormatter(Cfg());
         Assert.Equal("J0321干式", f.FormatRegister(200, Snapshot((200, 1))));
-        Assert.Equal("12接口", f.FormatRegister(203, Snapshot((203, 12))));
+        Assert.Equal("接口数量12", f.FormatRegister(203, Snapshot((203, 12))));
     }
 
     [Fact]
@@ -38,21 +38,21 @@ public class SnapshotFormatterTests
     {
         var f = new SnapshotFormatter(Cfg());
         Assert.Equal("36.5℃", f.FormatRegister(210, Snapshot((210, 365))));
-        Assert.Equal("200rpm", f.FormatRegister(208, Snapshot((208, 200))));
+        Assert.Equal("200.00rpm", f.FormatRegister(208, Snapshot((208, 200))));
     }
 
     [Fact]
     public void Result_UnitFromMethodRegister()
     {
         var f = new SnapshotFormatter(Cfg());
-        // 32 位高字在前：D204/D212 为高字，D205/D213 为低字；整数位模式按倍率换算
-        Assert.Equal("0.01PsiG", f.FormatRegister(212, Snapshot((205, 1), (213, 1))));
-        Assert.Equal("0.2ml/min", f.FormatRegister(212, Snapshot((205, 11), (213, 2))));
+        // 测试方法 D204 为 16 位；接口结果 32 位高字在前：D212 高字、D213 低字；整数位模式按倍率换算
+        Assert.Equal("0.01PsiG", f.FormatRegister(212, Snapshot((204, 1), (213, 1))));
+        Assert.Equal("0.2ml/min", f.FormatRegister(212, Snapshot((204, 11), (213, 2))));
         // 测试方法未定义单位时回退到本列的 scale/unit
-        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((205, 7), (213, 3))));
+        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((204, 7), (213, 3))));
         // 浮点位模式（20.5f = 0x41A40000）直接取工程值
-        Assert.Equal("20.50PsiG", f.FormatRegister(212, Snapshot((205, 1), (212, 0x41A4), (213, 0))));
-        Assert.Equal("0.4ml/min", f.FormatRegister(212, Snapshot((205, 11), (212, 0x3ECC), (213, 0xCCCD))));
+        Assert.Equal("20.50PsiG", f.FormatRegister(212, Snapshot((204, 1), (212, 0x41A4), (213, 0))));
+        Assert.Equal("0.4ml/min", f.FormatRegister(212, Snapshot((204, 11), (212, 0x3ECC), (213, 0xCCCD))));
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class SnapshotFormatterTests
         var cfg = Cfg();
         cfg.Find(208)!.Signed = true;
         var f = new SnapshotFormatter(cfg);
-        Assert.Equal("-1rpm", f.FormatRegister(208, Snapshot((208, 65535))));
+        Assert.Equal("-1.00rpm", f.FormatRegister(208, Snapshot((208, 65535))));
     }
 
     [Fact]
@@ -75,9 +75,9 @@ public class SnapshotFormatterTests
     public void Format_FollowsExcelColumnsOrder()
     {
         var f = new SnapshotFormatter(Cfg());
-        var row = f.Format(Snapshot((200, 23), (202, 5), (203, 12), (205, 1), (208, 200), (210, 365), (211, 12), (209, 4), (213, 1)));
+        var row = f.Format(Snapshot((200, 23), (202, 5), (203, 12), (204, 1), (208, 200), (210, 365), (211, 12), (209, 4), (213, 1)));
         Assert.Equal(new[] { "产品编号", "测试方式", "接口数量", "测试方法", "电机转速", "温度", "扭矩", "纯水流量", "接口1测试结果" }, f.Headers.Take(9));
-        Assert.Equal(new[] { "JC003干湿式", "4H运转后试验", "12接口", "压力20PsiG", "200rpm", "36.5℃", "12", "100~200ml", "0.01PsiG" }, row.Take(9).Select(c => c.Text));
+        Assert.Equal(new[] { "JC003干湿式", "4H运转后试验", "接口数量12", "压力20PsiG", "200.00rpm", "36.5℃", "12.00N.m", "100~200ml", "0.01PsiG" }, row.Take(9).Select(c => c.Text));
         Assert.Equal(20, row.Count);
     }
 }
