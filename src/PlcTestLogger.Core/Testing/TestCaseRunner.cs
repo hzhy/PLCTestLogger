@@ -8,8 +8,12 @@ namespace PlcTestLogger.Core.Testing;
 /// <summary>一条测试用例：PLC 原始字（地址 → 16 位字）和期望显示文字（地址 → 文字）。</summary>
 public sealed record TestCase(string Name, IReadOnlyDictionary<int, ushort> Words, IReadOnlyDictionary<int, string> Expect);
 
-/// <summary>一项检查结果，对应界面表格的一行。</summary>
-public sealed record TestCheck(string Case, string Register, string Name, string Raw, string Expected, string Actual, bool Passed)
+/// <summary>
+/// 一项检查结果，对应界面表格的一行。
+/// Value = 原始字按数据类型和字序解码后的数值（未乘倍率、未查选项表）；
+/// Display = 语义化后的显示文字（与实时数据区、Excel 一致），与 Expected 比对。
+/// </summary>
+public sealed record TestCheck(string Case, string Register, string Name, string Raw, string Value, string Display, string Expected, bool Passed)
 {
     public string ResultText => Passed ? "通过" : "失败";
 }
@@ -71,7 +75,7 @@ public static class TestCaseRunner
             var outside = c.Words.Keys.Where(a => !cfg.Contains(a)).OrderBy(a => a).ToList();
             if (outside.Count > 0)
             {
-                results.Add(new TestCheck(c.Name, "—", "", "", "", $"原始字 {string.Join("、", outside.Select(a => "D" + a))} 不在读取范围 {range} 内", false));
+                results.Add(new TestCheck(c.Name, "—", "", "", "", $"原始字 {string.Join("、", outside.Select(a => "D" + a))} 不在读取范围 {range} 内", "", false));
                 continue;
             }
             foreach (var (address, word) in c.Words) snapshot[cfg.IndexOf(address)] = word;
@@ -81,14 +85,24 @@ public static class TestCaseRunner
                 var def = cfg.Find(address);
                 if (def is null)
                 {
-                    results.Add(new TestCheck(c.Name, $"D{address}", "", "", expected, "（未定义的寄存器；32 位数据请写起始地址）", false));
+                    results.Add(new TestCheck(c.Name, $"D{address}", "", "", "", "（未定义的寄存器；32 位数据请写起始地址）", expected, false));
                     continue;
                 }
                 var cell = formatter.FormatCell(address, snapshot);
-                results.Add(new TestCheck(c.Name, $"D{address}", def.Name, cell.Raw, expected, cell.Text, cell.Text == expected));
+                var value = FormatValue(def, formatter.ReadValue(def, snapshot, out var isFloat), isFloat);
+                results.Add(new TestCheck(c.Name, $"D{address}", def.Name, cell.Raw, value, cell.Text, expected, cell.Text == expected));
             }
         }
         return results;
+    }
+
+    /// <summary>解码后的数值；32 位数据注明按整数还是浮点解释。</summary>
+    private static string FormatValue(RegisterDefinition def, double value, bool isFloat)
+    {
+        var text = isFloat
+            ? ((float)value).ToString(CultureInfo.InvariantCulture)
+            : ((long)value).ToString(CultureInfo.InvariantCulture);
+        return def.Width == 2 ? text + (isFloat ? "（浮点）" : "（整数）") : text;
     }
 
     private static int ParseAddress(string key, string caseName)

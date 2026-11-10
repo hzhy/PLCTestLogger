@@ -211,7 +211,7 @@ public static class RegisterMap
               "name": "接口1测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -220,7 +220,7 @@ public static class RegisterMap
               "name": "接口2测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -229,7 +229,7 @@ public static class RegisterMap
               "name": "接口3测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -238,7 +238,7 @@ public static class RegisterMap
               "name": "接口4测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -247,7 +247,7 @@ public static class RegisterMap
               "name": "接口5测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -256,7 +256,7 @@ public static class RegisterMap
               "name": "接口6测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -265,7 +265,7 @@ public static class RegisterMap
               "name": "接口7测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -274,7 +274,7 @@ public static class RegisterMap
               "name": "接口8测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -283,7 +283,7 @@ public static class RegisterMap
               "name": "接口9测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -292,7 +292,7 @@ public static class RegisterMap
               "name": "接口10测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -301,7 +301,7 @@ public static class RegisterMap
               "name": "接口11测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },
@@ -310,7 +310,7 @@ public static class RegisterMap
               "name": "接口12测试结果",
               "type": "number",
               "dataType": "auto32",
-              "scale": 0.01,
+              "scale": 0.001,
               "decimals": 2,
               "unitFrom": 204
             },

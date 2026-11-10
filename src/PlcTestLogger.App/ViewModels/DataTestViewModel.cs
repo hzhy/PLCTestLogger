@@ -49,7 +49,7 @@ public partial class DataTestViewModel : ObservableObject
             IsBad = failed > 0;
             Status = failed == 0
                 ? $"全部通过：{cases.Count} 条用例，{_all.Count} 项检查。"
-                : $"{failed} 项失败，共 {_all.Count} 项检查（{cases.Count} 条用例）。失败项的“实际”列为程序当前的显示。";
+                : $"{failed} 项失败，共 {_all.Count} 项检查（{cases.Count} 条用例）。失败项的“显示值”列为程序当前的显示。";
         }
         catch (Exception ex)
         {

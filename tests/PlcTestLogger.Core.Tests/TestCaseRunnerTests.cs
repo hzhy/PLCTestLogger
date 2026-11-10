@@ -37,10 +37,13 @@ public class TestCaseRunnerTests
     public void Run_ReportsPassAndFailWithActualText()
     {
         var results = TestCaseRunner.Run(TestCaseRunner.Parse(Json), ConfigLoaderTests.BuiltIn());
-        Assert.All(results.Where(r => r.Case == "ok"), r => Assert.True(r.Passed, $"{r.Register}: {r.Actual}"));
+        Assert.All(results.Where(r => r.Case == "ok"), r => Assert.True(r.Passed, $"{r.Register}: {r.Display}"));
         var bad = results.Single(r => r.Case == "wrong" && r.Register == "D200");
         Assert.False(bad.Passed);
-        Assert.Equal("K37", bad.Actual);
+        Assert.Equal("K37", bad.Display);
+        Assert.Equal("37", bad.Value);
+        Assert.Equal("20.5（浮点）", results.Single(r => r.Register == "D212").Value);
+        Assert.Equal("365", results.Single(r => r.Case == "ok" && r.Register == "D210").Value);
         Assert.Equal("失败", bad.ResultText);
         Assert.True(results.Single(r => r.Case == "wrong" && r.Register == "D240").Passed);
         Assert.Equal("0x41A4 0x0000", results.Single(r => r.Register == "D212").Raw);
@@ -56,7 +59,7 @@ public class TestCaseRunnerTests
             ] }
             """);
         var results = TestCaseRunner.Run(cases, ConfigLoaderTests.BuiltIn());
-        Assert.Contains("D199", results.Single(r => r.Case == "range").Actual);
+        Assert.Contains("D199", results.Single(r => r.Case == "range").Display);
         Assert.False(results.Single(r => r.Case == "second-word").Passed);
     }
 

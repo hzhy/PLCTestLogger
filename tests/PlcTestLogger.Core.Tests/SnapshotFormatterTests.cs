@@ -49,7 +49,7 @@ public class SnapshotFormatterTests
         Assert.Equal("0.01PsiG", f.FormatRegister(212, Snapshot((204, 1), (213, 1))));
         Assert.Equal("0.2ml/min", f.FormatRegister(212, Snapshot((204, 11), (213, 2))));
         // 测试方法未定义单位时回退到本列的 scale/unit
-        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((204, 7), (213, 3))));
+        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((204, 7), (213, 30))));
         // 浮点位模式（20.5f = 0x41A40000）直接取工程值
         Assert.Equal("20.50PsiG", f.FormatRegister(212, Snapshot((204, 1), (212, 0x41A4), (213, 0))));
         Assert.Equal("0.4ml/min", f.FormatRegister(212, Snapshot((204, 11), (212, 0x3ECC), (213, 0xCCCD))));
