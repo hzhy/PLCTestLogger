@@ -13,6 +13,7 @@ using PlcTestLogger.Core.Storage;
 // 离屏渲染窗口客户区为 PNG（锁屏时屏幕抓图不可用）。
 //   ShotGen edit <out.png>              编辑设备对话框
 //   ShotGen main <out.png> [waitMs]     主界面：读取本程序目录下 config\，连接设备后渲染（需先启动模拟器）
+//   ShotGen search <out.png> <loggerDir> <deviceId> <yyyy-MM-dd>   查询窗口：查询指定记录目录
 static class Program
 {
     [STAThread]
@@ -32,6 +33,16 @@ static class Program
             w = new MainWindow(manager);
             manager.StartAll();
             waitMs = args.Length > 2 ? int.Parse(args[2]) : 4000;
+        }
+        else if (mode == "search")
+        {
+            var vm = new PlcTestLogger.App.ViewModels.SearchViewModel(new ExcelLogStore(args[2]), new[] { args[3] }, RegisterConfigSource.Load().Config)
+            {
+                SelectedDeviceId = args[3],
+                Date = DateTime.Parse(args[4]),
+            };
+            vm.SearchCommand.Execute(null);
+            w = new SearchWindow(vm) { Width = 1400 };
         }
         else
         {

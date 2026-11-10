@@ -67,7 +67,7 @@ public partial class MainWindow : Window
 
     private void Search_Click(object sender, RoutedEventArgs e)
     {
-        var win = new SearchWindow(new SearchViewModel(_manager.Store, _manager.Devices.Select(d => d.Id)))
+        var win = new SearchWindow(new SearchViewModel(_manager.Store, _manager.Devices.Select(d => d.Id), _manager.Registers))
         {
             Owner = this,
         };

@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PlcTestLogger.Core.Config;
+using PlcTestLogger.Core.Mapping;
 using PlcTestLogger.Core.Storage;
 
 namespace PlcTestLogger.App.ViewModels;
@@ -9,10 +11,12 @@ namespace PlcTestLogger.App.ViewModels;
 public partial class SearchViewModel : ObservableObject
 {
     private readonly ExcelLogStore _store;
+    private readonly RegisterConfig _registers;
 
-    public SearchViewModel(ExcelLogStore store, IEnumerable<string> deviceIds)
+    public SearchViewModel(ExcelLogStore store, IEnumerable<string> deviceIds, RegisterConfig registers)
     {
         _store = store;
+        _registers = registers;
         foreach (var id in deviceIds) DeviceIds.Add(id);
         SelectedDeviceId = DeviceIds.FirstOrDefault();
     }
@@ -36,9 +40,11 @@ public partial class SearchViewModel : ObservableObject
                 Status = $"{SelectedDeviceId} 在 {Date:yyyy-MM-dd} 没有记录。";
                 return;
             }
+            // 列按寄存器地址从低到高显示（Excel 文件本身的列顺序不变）
+            var order = ColumnOrder.ByRegisterAddress(rows[0], _registers);
             var table = new DataTable();
-            foreach (var h in rows[0]) table.Columns.Add(MakeUnique(table, h));
-            foreach (var r in rows.Skip(1)) table.Rows.Add(r.Cast<object>().ToArray());
+            foreach (var i in order) table.Columns.Add(MakeUnique(table, rows[0][i]));
+            foreach (var r in rows.Skip(1)) table.Rows.Add(order.Select(i => (object)(i < r.Length ? r[i] : "")).ToArray());
             Results = table.DefaultView;
             Status = $"{SelectedDeviceId} {Date:yyyy-MM-dd} 共 {rows.Count - 1} 条记录。文件：{_store.GetFilePath(SelectedDeviceId, Date)}";
         }
