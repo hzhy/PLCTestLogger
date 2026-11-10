@@ -45,14 +45,16 @@ public class SnapshotFormatterTests
     public void Result_UnitFromMethodRegister()
     {
         var f = new SnapshotFormatter(Cfg());
-        // 测试方法 D204 为 16 位；接口结果 32 位高字在前：D212 高字、D213 低字；整数位模式按倍率换算
-        Assert.Equal("0.01PsiG", f.FormatRegister(212, Snapshot((204, 1), (213, 1))));
-        Assert.Equal("0.2ml/min", f.FormatRegister(212, Snapshot((204, 11), (213, 2))));
+        // 32 位低字在前：D204/D212 为低字，D205/D213 为高字；整数位模式按测试方法的倍率换算
+        Assert.Equal("0.01PsiG", f.FormatRegister(212, Snapshot((204, 1), (212, 10))));       // 压力法 ×0.001
+        Assert.Equal("0.02ml/min", f.FormatRegister(212, Snapshot((204, 11), (212, 2))));     // 流量法 11 ×0.01，2 位小数
         // 测试方法未定义单位时回退到本列的 scale/unit
-        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((204, 7), (213, 30))));
+        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((204, 7), (212, 3))));
         // 浮点位模式（20.5f = 0x41A40000）直接取工程值
-        Assert.Equal("20.50PsiG", f.FormatRegister(212, Snapshot((204, 1), (212, 0x41A4), (213, 0))));
-        Assert.Equal("0.4ml/min", f.FormatRegister(212, Snapshot((204, 11), (212, 0x3ECC), (213, 0xCCCD))));
+        Assert.Equal("20.50PsiG", f.FormatRegister(212, Snapshot((204, 1), (212, 0), (213, 0x41A4))));
+        Assert.Equal("0.40ml/min", f.FormatRegister(212, Snapshot((204, 11), (212, 0xCCCD), (213, 0x3ECC))));
+        // 测试方法以浮点 11.0 写入（0x41300000）也能识别
+        Assert.Equal("0.40ml/min", f.FormatRegister(212, Snapshot((204, 0), (205, 0x4130), (212, 0xCCCD), (213, 0x3ECC))));
     }
 
     [Fact]
@@ -75,7 +77,7 @@ public class SnapshotFormatterTests
     public void Format_FollowsExcelColumnsOrder()
     {
         var f = new SnapshotFormatter(Cfg());
-        var row = f.Format(Snapshot((200, 23), (202, 5), (203, 12), (204, 1), (208, 200), (210, 365), (211, 12), (209, 4), (213, 1)));
+        var row = f.Format(Snapshot((200, 23), (202, 5), (203, 12), (204, 1), (208, 200), (210, 365), (211, 12), (209, 4), (212, 10)));
         Assert.Equal(new[] { "产品编号", "测试方式", "接口数量", "测试方法", "电机转速", "温度", "扭矩", "纯水流量", "接口1测试结果" }, f.Headers.Take(9));
         Assert.Equal(new[] { "JC003干湿式", "4H运转后试验", "接口数量12", "压力20PsiG", "200.00rpm", "36.5℃", "12.00N.m", "100~200ml", "0.01PsiG" }, row.Take(9).Select(c => c.Text));
         Assert.Equal(20, row.Count);

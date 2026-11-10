@@ -10,7 +10,7 @@ public class TestCaseRunnerTests
           "cases": [
             {
               "name": "ok",
-              "words": { "200": 1, "D204": "0x0001", "212": "0x41A4", "213": "0x0000", "210": 365 },
+              "words": { "200": 1, "D204": "0x0001", "212": "0x0000", "213": "0x41A4", "210": 365 },
               "expect": { "200": "J0321干式", "204": "压力20PsiG", "D212": "20.50PsiG", "210": "36.5℃" }
             },
             {
@@ -27,7 +27,7 @@ public class TestCaseRunnerTests
     {
         var cases = TestCaseRunner.Parse(Json);
         Assert.Equal(2, cases.Count);
-        Assert.Equal((ushort)0x41A4, cases[0].Words[212]);
+        Assert.Equal((ushort)0x41A4, cases[0].Words[213]);
         Assert.Equal((ushort)1, cases[0].Words[204]);
         Assert.Equal("20.50PsiG", cases[0].Expect[212]);
         Assert.Equal("0", cases[1].Expect[240]);
@@ -46,7 +46,7 @@ public class TestCaseRunnerTests
         Assert.Equal("365", results.Single(r => r.Case == "ok" && r.Register == "D210").Value);
         Assert.Equal("失败", bad.ResultText);
         Assert.True(results.Single(r => r.Case == "wrong" && r.Register == "D240").Passed);
-        Assert.Equal("0x41A4 0x0000", results.Single(r => r.Register == "D212").Raw);
+        Assert.Equal("0x0000 0x41A4", results.Single(r => r.Register == "D212").Raw);
     }
 
     [Fact]

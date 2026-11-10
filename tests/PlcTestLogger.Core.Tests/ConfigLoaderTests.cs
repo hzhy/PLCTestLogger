@@ -15,14 +15,14 @@ public class ConfigLoaderTests
         Assert.Equal(200, cfg.StartRegister);
         Assert.Equal(41, cfg.Count);
         Assert.Equal(240, cfg.TriggerRegister);
-        Assert.Equal("highLow", cfg.WordOrder);
+        Assert.Equal("lowHigh", cfg.WordOrder);
         var product = cfg.Find(200)!;
         Assert.True(product.IsEnum);
         Assert.Equal("J0321干式", product.Options!["1"]);
         Assert.Equal(20, cfg.ExcelColumns.Count);
         Assert.Equal(204, cfg.Find(212)!.UnitFrom);
         Assert.Equal("auto32", cfg.Find(212)!.EffectiveDataType);
-        Assert.Equal(1, cfg.Find(204)!.Width);
+        Assert.Equal(2, cfg.Find(204)!.Width);
         Assert.Null(cfg.Find(213));
     }
 
