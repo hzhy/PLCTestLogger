@@ -38,7 +38,7 @@ public class SnapshotFormatterTests
     {
         var f = new SnapshotFormatter(Cfg());
         Assert.Equal("36.5℃", f.FormatRegister(210, Snapshot((210, 365))));
-        Assert.Equal("200.00rpm", f.FormatRegister(208, Snapshot((208, 200))));
+        Assert.Equal("200.00rpm", f.FormatRegister(208, Snapshot((208, 20000))));
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class SnapshotFormatterTests
         var cfg = Cfg();
         cfg.Find(208)!.Signed = true;
         var f = new SnapshotFormatter(cfg);
-        Assert.Equal("-1.00rpm", f.FormatRegister(208, Snapshot((208, 65535))));
+        Assert.Equal("-0.01rpm", f.FormatRegister(208, Snapshot((208, 65535))));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class SnapshotFormatterTests
     public void Format_FollowsExcelColumnsOrder()
     {
         var f = new SnapshotFormatter(Cfg());
-        var row = f.Format(Snapshot((200, 23), (202, 5), (203, 12), (204, 1), (208, 200), (210, 365), (211, 12), (209, 4), (212, 10)));
+        var row = f.Format(Snapshot((200, 23), (202, 5), (203, 12), (204, 1), (208, 20000), (210, 365), (211, 1200), (209, 4), (212, 10)));
         Assert.Equal(new[] { "产品编号", "测试方式", "接口数量", "测试方法", "电机转速", "温度", "扭矩", "纯水流量", "接口1测试结果" }, f.Headers.Take(9));
         Assert.Equal(new[] { "JC003干湿式", "4H运转后试验", "接口数量12", "压力20PsiG", "200.00rpm", "36.5℃", "12.00N.m", "100~200ml", "0.01PsiG" }, row.Take(9).Select(c => c.Text));
         Assert.Equal(20, row.Count);

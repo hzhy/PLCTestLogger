@@ -23,6 +23,16 @@ public class TestCaseRunnerTests
         """;
 
     [Fact]
+    public void SampleTestCases_AllPassWithBuiltIn()
+    {
+        // samples/test/test-cases.json 随程序发布，必须与内置寄存器定义保持一致
+        var path = Path.Combine(AppContext.BaseDirectory, "samples", "test-cases.json");
+        var results = TestCaseRunner.Run(TestCaseRunner.Load(path), ConfigLoaderTests.BuiltIn());
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.True(r.Passed, $"{r.Case} {r.Register}: 显示 {r.Display}，期望 {r.Expected}"));
+    }
+
+    [Fact]
     public void Parse_ReadsDecimalHexAndDPrefix()
     {
         var cases = TestCaseRunner.Parse(Json);

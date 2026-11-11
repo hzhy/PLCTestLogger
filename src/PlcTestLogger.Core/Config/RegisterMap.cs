@@ -172,7 +172,7 @@ public static class RegisterMap
               "address": 208,
               "name": "电机转速",
               "type": "number",
-              "scale": 1,
+              "scale": 0.01,
               "decimals": 2,
               "unit": "rpm"
             },
@@ -203,7 +203,7 @@ public static class RegisterMap
               "address": 211,
               "name": "扭矩",
               "type": "number",
-              "scale": 1,
+              "scale": 0.01,
               "decimals": 2,
               "unit": "N.m"
             },
