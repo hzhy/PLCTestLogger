@@ -7,6 +7,8 @@ public static class AppPaths
     public static string BaseDir => AppContext.BaseDirectory;
     public static string ConfigDir => Path.Combine(BaseDir, "config");
     public static string RegistersConfig => Path.Combine(ConfigDir, "registers.json");
+    /// <summary>选项名称覆盖文件；只在没有 registers.json 时生效。</summary>
+    public static string RegisterOptionsConfig => Path.Combine(ConfigDir, "register-options.json");
     public static string DevicesConfig => Path.Combine(ConfigDir, "devices.json");
     public static string LoggerDir => Path.Combine(BaseDir, "logger");
     public static string LogsDir => Path.Combine(BaseDir, "logs");

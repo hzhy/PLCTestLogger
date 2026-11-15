@@ -33,12 +33,13 @@ public partial class App : Application
         catch (Exception ex)
         {
             AppLog.Error("配置加载失败: " + ex);
-            MessageBox.Show($"配置加载失败：\n{ex.Message}\n\n请检查 {AppPaths.ConfigDir} 下的 devices.json；如果放了 registers.json 覆盖文件，请检查其格式，或删除它以使用内置定义。", "配置错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"配置加载失败：\n{ex.Message}\n\n请检查 {AppPaths.ConfigDir} 下的 devices.json；如果放了 registers.json 或 register-options.json 覆盖文件，请检查其格式，或删除它以使用内置定义。", "配置错误", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
             return;
         }
 
         AppLog.Info($"启动，设备 {devices.Devices.Count} 台，触发寄存器 D{registers.Config.TriggerRegister}，寄存器定义：{registers.Label}");
+        if (registers.Note is not null) AppLog.Info(registers.Note);
         _manager = new DeviceManager(registers.Config, devices, new NModbusRegisterReaderFactory(), new ExcelLogStore(AppPaths.LoggerDir));
         var window = new MainWindow(_manager);
         MainWindow = window;

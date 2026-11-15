@@ -48,8 +48,8 @@ public class SnapshotFormatterTests
         // 32 位低字在前：D204/D212 为低字，D205/D213 为高字；整数位模式按测试方法的倍率换算
         Assert.Equal("0.01PsiG", f.FormatRegister(212, Snapshot((204, 1), (212, 10))));       // 压力法 ×0.001
         Assert.Equal("0.02ml/min", f.FormatRegister(212, Snapshot((204, 11), (212, 2))));     // 流量法 11 ×0.01，2 位小数
-        // 测试方法未定义单位时回退到本列的 scale/unit
-        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((204, 7), (212, 3))));
+        // 测试方法不在选项表中（未定义单位）时回退到本列的 scale/unit
+        Assert.Equal("0.03", f.FormatRegister(212, Snapshot((204, 21), (212, 3))));
         // 浮点位模式（20.5f = 0x41A40000）直接取工程值
         Assert.Equal("20.50PsiG", f.FormatRegister(212, Snapshot((204, 1), (212, 0), (213, 0x41A4))));
         Assert.Equal("0.40ml/min", f.FormatRegister(212, Snapshot((204, 11), (212, 0xCCCD), (213, 0x3ECC))));
